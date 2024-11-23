@@ -122,7 +122,7 @@ Distributed under the GPL v2 or later. See `LICENSE` for more information.
 
 ## 👥 Authors
 
-- **Your Name** - *Initial work* - [arisciwek](https://github.com/arisciwek/)
+- **arisciwek** - *Initial work* - [arisciwek](https://github.com/arisciwek)
 
 ## 🙏 Acknowledgments
 
