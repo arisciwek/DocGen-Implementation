@@ -1,0 +1,135 @@
+/* modules/company-profile/assets/css/style.css */
+.card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-top: 20px;
+    padding: 15px 25px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.card h2 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 1.4em;
+}
+
+.form-table th {
+    width: 200px;
+}
+
+.spinner.is-active {
+    visibility: visible;
+    display: inline-block;
+}
+
+#generation-result {
+    margin: 20px 0;
+}
+
+
+/* Directory and Template Test Styles */
+.directory-actions,
+.template-actions {
+    margin: 10px 0;
+}
+
+.directory-actions .spinner,
+.template-actions .spinner {
+    float: none;
+    margin: 0 0 0 5px;
+}
+
+#test-directory-result,
+#test-template-result {
+    margin-top: 10px;
+}
+
+.temp-dir-status,
+.template-status {
+    margin: 10px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.temp-dir-status p,
+.template-status p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+#template-file {
+    margin-left: 10px;
+    min-width: 200px;
+}
+
+.notice {
+    margin: 5px 0 15px;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.status-indicator.success {
+    color: #46b450;
+}
+
+.status-indicator.error {
+    color: #dc3232;
+}
+
+/* Standarisasi tinggi input fields */
+.form-table input[type="text"],
+.form-table input[type="url"],
+.form-table input[type="email"],
+.form-table select,
+.template-dir-input {
+    min-height: 30px;
+    line-height: 30px;
+}
+
+.template-dir-input {
+    display: flex;
+    align-items: stretch; /* Ubah dari center ke stretch */
+}
+
+.template-dir-input .base-path {
+    background: #f0f0f1;
+    padding: 4px 8px;
+    border: 1px solid #8c8f94;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    color: #646970;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+}
+
+.template-dir-input .folder-name {
+    margin-left: 0;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    height: auto; /* Biarkan mengikuti parent */
+}
+
+/* Standarisasi margin dan spacing */
+.form-table td {
+    padding: 15px 10px;
+}
+
+.form-table input.regular-text {
+    width: 25em;
+    max-width: 100%;
+}
+
+/* Konsistensi button height */
+.button {
+    height: 30px;
+    line-height: 28px;
+}

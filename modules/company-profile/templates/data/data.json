@@ -1,0 +1,87 @@
+/**
+ * Company Profile Data Structure untuk DocGen
+ *
+ * @package     DocGen_Implementation
+ * @subpackage  Company_Profile
+ * @version     1.0.0
+ * @author      arisciwek
+ * 
+ * Path: modules/company-profile/data/data.json
+ * 
+ * Changelog:
+ * 1.0.0 - 2024-11-24
+ * - Initial data structure
+ * - Basic company information
+ * - Complete profile and business details
+ */
+ 
+{
+  "company_name": "PT Example Technology",
+  "legal_name": "PT EXAMPLE TECHNOLOGY INDONESIA",
+  "tagline": "Transforming Ideas into Digital Reality",
+  "address": {
+    "street": "Jl. Teknologi Raya No. 88",
+    "city": "Jakarta Selatan",
+    "province": "DKI Jakarta",
+    "postal_code": "12950",
+    "country": "Indonesia"
+  },
+  "contact": {
+    "phone": "(021) 555-0123",
+    "email": "hello@example-tech.id",
+    "website": "www.example-tech.id"
+  },
+  "registration": {
+    "company_id": "9012345678901",
+    "tax_id": "80.111.222.3-444.555",
+    "established_date": "2020-03-15"
+  },
+  "profile": {
+    "vision": "Menjadi perusahaan teknologi terpercaya yang memberikan solusi inovatif untuk kemajuan Indonesia digital",
+    "mission": [
+      "Menghadirkan solusi teknologi yang inovatif dan berkualitas tinggi",
+      "Memberikan layanan profesional dengan integritas dan komitmen",
+      "Berkontribusi pada perkembangan ekosistem teknologi nasional",
+      "Mengembangkan talenta digital berkualitas untuk Indonesia"
+    ],
+    "values": [
+      "Innovation First",
+      "Excellence in Quality",
+      "Customer Success",
+      "Integrity Always",
+      "Continuous Learning"
+    ]
+  },
+  "business": {
+    "main_services": [
+      "Custom Software Development",
+      "Digital Transformation Consulting",
+      "Cloud Infrastructure Solutions",
+      "Mobile App Development"
+    ],
+    "industries": [
+      "Financial Technology",
+      "E-Commerce",
+      "Healthcare",
+      "Education"
+    ],
+    "employee_count": "50-100",
+    "office_locations": [
+      "Jakarta (HQ)",
+      "Bandung",
+      "Surabaya"
+    ]
+  },
+  "certifications": [
+    {
+      "name": "ISO 9001:2015",
+      "description": "Quality Management System",
+      "valid_until": "2024-12-31"
+    },
+    {
+      "name": "ISO 27001:2013",
+      "description": "Information Security Management",
+      "valid_until": "2024-12-31"
+    }
+  ]
+}
