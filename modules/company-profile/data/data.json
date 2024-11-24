@@ -1,20 +1,3 @@
-/**
- * Company Profile Data Structure untuk DocGen
- *
- * @package     DocGen_Implementation
- * @subpackage  Company_Profile
- * @version     1.0.0
- * @author      arisciwek
- * 
- * Path: modules/company-profile/data/data.json
- * 
- * Changelog:
- * 1.0.0 - 2024-11-24
- * - Initial data structure
- * - Basic company information
- * - Complete profile and business details
- */
- 
 {
   "company_name": "PT Example Technology",
   "legal_name": "PT EXAMPLE TECHNOLOGY INDONESIA",

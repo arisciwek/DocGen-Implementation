@@ -199,7 +199,7 @@ register_activation_hook(__FILE__, 'docgen_implementation_activate');
 
 /**
  * Plugin deactivation
- */
+ *
 function docgen_implementation_deactivate() {
     // Get settings
     $settings = get_option('docgen_implementation_settings');
@@ -215,7 +215,41 @@ function docgen_implementation_deactivate() {
     wp_clear_scheduled_hook('docgen_implementation_cleanup_temp');
 
     // Hapus settings dari database
-    delete_option('docgen_implementation_settings');
+    // delete_option('docgen_implementation_settings');
+
+    flush_rewrite_rules();
+}
+*/
+
+
+/**
+ * Plugin deactivation
+ */
+function docgen_implementation_deactivate() {
+    // Get settings
+    $settings = get_option('docgen_implementation_settings');
+    
+    // Clean up temp directory if exists
+    if (!empty($settings['temp_dir']) && file_exists($settings['temp_dir'])) {
+        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
+        $directory_handler = new DocGen_Implementation_Directory_Handler();
+        
+        // Gunakan method clean_directory untuk membersihkan file
+        $cleanup_result = $directory_handler->clean_directory($settings['temp_dir'], array(
+            'older_than' => 0, // hapus semua file
+            'keep_latest' => 0, // tidak perlu menyimpan file
+            'recursive' => true // hapus semua subfolder
+        ));
+        
+        if (is_wp_error($cleanup_result)) {
+            error_log('Error cleaning temp directory: ' . $cleanup_result->get_error_message());
+        } else {
+            error_log('Temp directory cleaned: ' . print_r($cleanup_result, true));
+        }
+    }
+
+    // Clear scheduled hooks
+    wp_clear_scheduled_hook('docgen_implementation_cleanup_temp');
 
     flush_rewrite_rules();
 }

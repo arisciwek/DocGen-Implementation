@@ -16,15 +16,15 @@ if (!defined('ABSPATH')) {
 class DocGen_Implementation_Company_Profile_Module {
     /**
      * Module instance
-     * @var self
+     * @var self|null
      */
-    private static $instance = null;
+    protected static $instance = null;
 
     /**
      * Module info
      */
     const MODULE_SLUG = 'company-profile';
-    const MODULE_VERSION = '1.0.0';
+    const MODULE_VERSION = '1.0.1';
 
     /**
      * Constructor
@@ -45,6 +45,7 @@ class DocGen_Implementation_Company_Profile_Module {
 
     /**
      * Get module instance
+     * @return self
      */
     public static function get_instance() {
         if (is_null(self::$instance)) {
@@ -91,24 +92,33 @@ class DocGen_Implementation_Company_Profile_Module {
     }
 
     /**
-     * Handle profile generation
+     * Handle profile generation with detailed error handling
      */
     public function handle_generate_profile() {
         check_ajax_referer('docgen_implementation');
 
         try {
+            // Debug: Cek data form
+            error_log('POST data: ' . print_r($_POST, true));
+            
             // Load provider
             require_once dirname(__FILE__) . '/includes/class-provider.php';
             $provider = new DocGen_Implementation_Company_Profile_Provider();
             
+            // Debug: Cek data provider
+            error_log('Provider data: ' . print_r($provider->get_data(), true));
+            
             // Generate document
             $result = wp_docgen()->generate($provider);
             
+            // Debug: Cek hasil generate
+            error_log('Generate result: ' . print_r($result, true));
+            
             if (is_wp_error($result)) {
+                error_log('Generate error: ' . $result->get_error_message());
                 wp_send_json_error($result->get_error_message());
             }
 
-            // Get file URL from path
             $upload_dir = wp_upload_dir();
             $file_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $result);
             
@@ -118,9 +128,12 @@ class DocGen_Implementation_Company_Profile_Module {
             ));
 
         } catch (Exception $e) {
+            error_log('Exception: ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
     }
+
+
 
     /**
      * Enqueue module assets
