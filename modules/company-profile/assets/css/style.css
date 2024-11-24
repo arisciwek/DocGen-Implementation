@@ -1,0 +1,47 @@
+/**
+ * Company Profile Module Styles
+ *
+ * @package     DocGen_Implementation
+ * @subpackage  Company_Profile
+ * @version     1.0.0
+ * @author      arisciwek
+ * 
+ * Path: modules/company-profile/assets/css/style.css
+ */
+
+/* Form Layouts */
+.company-profile-form .card {
+    max-width: 800px;
+}
+
+.company-profile-form .form-group {
+    margin-bottom: 20px;
+}
+
+/* Multi-line text inputs */
+.company-profile-form textarea {
+    min-height: 100px;
+}
+
+/* Generation Results */
+#generation-result {
+    display: none;
+    margin-top: 15px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Generation Button */
+#generate-profile {
+    position: relative;
+    padding-right: 30px;
+}
+
+#generate-profile .spinner {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    margin-top: -10px;
+}

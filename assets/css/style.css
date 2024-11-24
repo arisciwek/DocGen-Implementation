@@ -179,3 +179,35 @@
     margin-left: 10px;
     min-width: 200px;
 }
+
+/* -----------------------------
+ * 9. Migration Settings Directory
+ * --------------------------- */
+.docgen-migration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.docgen-migration-overlay .migration-status {
+    background: white;
+    padding: 20px 40px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.docgen-migration-overlay h3 {
+    margin: 0 0 15px;
+}
+
+.docgen-migration-overlay .spinner {
+    float: none;
+    margin: 0;
+}

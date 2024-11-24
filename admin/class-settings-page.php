@@ -4,7 +4,7 @@
  *
  * @package     DocGen_Implementation
  * @subpackage  Admin
- * @version     1.0.1
+ * @version     1.0.2
  * @author      arisciwek
  * 
  * Path: admin/class-settings-page.php
@@ -12,21 +12,36 @@
  * Description: Handles settings page functionality.
  *              Manages configuration untuk temporary directory,
  *              template directory, dan plugin options lainnya.
- *              Terintegrasi dengan DirectoryHandler untuk manajemen
- *              dan validasi directory yang lebih baik.
  * 
  * Changelog:
+ * 1.0.2 - 2024-11-24
+ * - Added directory migration enqueue script 
+ * - Enhanced string localization for migration features
+ * - Added dependency handling for JS files
+ * 
  * 1.0.1 - 2024-11-24
- * - Added integration with enhanced DirectoryHandler
- * - Added directory statistics display
- * - Added template scanning and validation
- * - Improved error handling and validation
- * - Added real-time directory status updates
+ * - Added directory testing functionality
+ * - Improved template validation
+ * - Enhanced UI/UX for directory configuration
+ * - Added security measures for directory handling
  * 
  * 1.0.0 - 2024-11-24
  * - Initial implementation
- * - Basic settings form implementation
+ * - Settings form implementation
  * - Directory configuration
+ * - Integration with DirectoryHandler
+ * 
+ * Dependencies:
+ * - class-admin-page.php
+ * - class-directory-handler.php
+ * - class-directory-migration.php
+ * 
+ * Usage:
+ * Handles all settings page related functionality including:
+ * - Directory configuration and testing
+ * - Template management
+ * - Migration handling
+ * - Security validation
  */
 
 if (!defined('ABSPATH')) {
@@ -66,13 +81,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * Enqueue page specific assets
      */
     protected function enqueue_page_assets() {
-        wp_enqueue_style(
-            'docgen-settings',
-            DOCGEN_IMPLEMENTATION_URL . 'assets/css/settings.css',
-            array(),
-            DOCGEN_IMPLEMENTATION_VERSION
-        );
-
+        // Enqueue settings script
         wp_enqueue_script(
             'docgen-settings',
             DOCGEN_IMPLEMENTATION_URL . 'admin/js/settings.js',
@@ -81,22 +90,36 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             true
         );
 
+        // Enqueue directory migration script
+        wp_enqueue_script(
+            'docgen-directory-migration',
+            DOCGEN_IMPLEMENTATION_URL . 'admin/js/directory-migration.js',
+            array('jquery', 'docgen-settings'), // Dependency pada settings.js
+            DOCGEN_IMPLEMENTATION_VERSION,
+            true
+        );
+
+        // Localize script dengan tambahan strings untuk migrasi
         wp_localize_script('docgen-settings', 'docgenSettings', array(
             'nonce' => wp_create_nonce('docgen_admin_nonce'),
             'strings' => array(
                 'testSuccess' => __('Test successful!', 'docgen-implementation'),
                 'testFailed' => __('Test failed:', 'docgen-implementation'),
                 'selectTemplate' => __('Select template...', 'docgen-implementation'),
-                'scanning' => __('Scanning directory...', 'docgen-implementation'),
-                'validating' => __('Validating templates...', 'docgen-implementation'),
-                'cleanupConfirm' => __('Are you sure you want to clean this directory? This action cannot be undone.', 'docgen-implementation')
-            ),
-            'refreshInterval' => 30, // Refresh stats every 30 seconds
-            'i18n' => array(
-                'bytes' => __('bytes', 'docgen-implementation'),
-                'kb' => __('KB', 'docgen-implementation'),
-                'mb' => __('MB', 'docgen-implementation'),
-                'gb' => __('GB', 'docgen-implementation')
+                // Tambahan strings untuk migrasi
+                'migrationPrompt' => __('Directory changes detected. Migration may be needed:', 'docgen-implementation'),
+                'migrating' => __('Migrating files...', 'docgen-implementation'),
+                'migrationComplete' => __('Migration completed!', 'docgen-implementation'),
+                'migrationError' => __('Migration failed:', 'docgen-implementation'),
+                'from' => __('From', 'docgen-implementation'),
+                'to' => __('To', 'docgen-implementation'),
+                'files' => __('Files', 'docgen-implementation'),
+                'migrated' => __('Migrated', 'docgen-implementation'),
+                'skipped' => __('Skipped', 'docgen-implementation'),
+                'errors' => __('Errors', 'docgen-implementation'),
+                'templateDir' => __('Template Directory', 'docgen-implementation'),
+                'tempDir' => __('Temporary Directory', 'docgen-implementation'),
+                'migrationConfirm' => __('Do you want to migrate these files?', 'docgen-implementation')
             )
         ));
     }

@@ -4,7 +4,7 @@
  *
  * @package     DocGen_Implementation
  * @subpackage  Admin
- * @version     1.0.0
+ * @version     1.0.1
  * @author      arisciwek
  * 
  * Path: admin/class-dashboard-page.php
@@ -14,6 +14,10 @@
  *              dan system information.
  * 
  * Changelog:
+ * 1.0.1 - 2024-11-24
+ * - Fixed asset loading using parent class method
+ * - Implemented proper enqueue_page_assets method
+ * 
  * 1.0.0 - Initial implementation
  * - Dashboard layout with cards
  * - Module listing
@@ -25,12 +29,14 @@ if (!defined('ABSPATH')) {
 }
 
 class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_Page {
-    
     /**
      * Constructor
      */
     public function __construct() {
+        // Set page slug before parent constructor
         $this->page_slug = 'docgen-implementation';
+        
+        // Call parent constructor
         parent::__construct();
     }
 

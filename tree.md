@@ -1,12 +1,15 @@
 .
 ├── admin
 │   ├── class-admin-menu.php
-│   ├── __class-admin-page.php
 │   ├── class-admin-page.php
 │   ├── class-dashboard-page.php
 │   ├── class-directory-handler.php
+│   ├── class-directory-migration.php
 │   ├── class-settings-page.php
+│   ├── css
+│   │   └── settings.css
 │   └── js
+│       ├── directory-migration.js
 │       └── settings.js
 ├── assets
 │   ├── css
@@ -15,15 +18,16 @@
 │       └── script.js
 ├── docgen-implementation.php
 ├── docs
-│   ├── docgen-implementation.md
-│   ├── pemecahan-class-admin-page-php.md
-│   ├── plugin-structure.md
-│   └── test-directory.md
 ├── includes
 │   └── class-module-loader.php
 ├── LICENSE
 ├── modules
 │   └── company-profile
+│       ├── assets
+│       │   ├── css
+│       │   │   └── style.css
+│       │   └── js
+│       │       └── script.js
 │       ├── class-module.php
 │       ├── includes
 │       │   └── class-provider.php
@@ -37,4 +41,3 @@
 ├── README.md
 └── tree.md
 
-14 directories, 23 files

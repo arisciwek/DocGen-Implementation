@@ -8,16 +8,6 @@
  * @author      arisciwek
  * 
  * Path: admin/class-admin-page.php
- * 
- * Description: Abstract base class untuk semua admin pages.
- *              Menyediakan struktur dasar dan helper methods yang dibutuhkan
- *              oleh semua admin page implementations.
- * 
- * Changelog:
- * 1.0.0 - Initial abstract base class
- * - Abstract base class untuk admin pages
- * - Common utility methods
- * - Asset handling
  */
 
 if (!defined('ABSPATH')) {
@@ -32,14 +22,31 @@ abstract class DocGen_Implementation_Admin_Page {
     protected $page_slug;
 
     /**
+     * Directory handler
+     * @var DocGen_Implementation_Directory_Handler
+     */
+    protected $dir_handler;
+
+    /**
+     * Migration handler
+     * @var DocGen_Implementation_Directory_Migration
+     */
+    protected $migration_handler;
+
+    /**
      * Constructor
      */
     public function __construct() {
+        // Initialize handlers
+        $this->dir_handler = new DocGen_Implementation_Directory_Handler();
+        $this->migration_handler = DocGen_Implementation_Directory_Migration::get_instance();
+        
+        // Add action for assets
         add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
     }
 
     /**
-     * Enqueue page specific assets
+     * Enqueue page assets
      * @param string $hook Current admin page hook
      */
     public function enqueue_assets($hook) {
@@ -47,15 +54,24 @@ abstract class DocGen_Implementation_Admin_Page {
             return;
         }
 
+        // Enqueue common admin assets
+        wp_enqueue_style(
+            'docgen-admin',
+            DOCGEN_IMPLEMENTATION_URL . 'assets/css/style.css',
+            array(),
+            DOCGEN_IMPLEMENTATION_VERSION
+        );
+
+        // Allow child classes to add their specific assets
         $this->enqueue_page_assets();
     }
 
     /**
-     * Enqueue page specific CSS/JS
-     * To be implemented by child classes
+     * Enqueue page specific assets
+     * To be implemented by child classes if needed
      */
     protected function enqueue_page_assets() {
-        // Child classes should implement this
+        // Child classes can implement this
     }
 
     /**
