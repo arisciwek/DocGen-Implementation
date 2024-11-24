@@ -40,12 +40,17 @@ class DocGen_Implementation_Directory_Handler {
      * @var array
      */
     private $allowed_extensions = array('docx', 'odt');
+    
+    /**
+     * Type of directory being validated
+     * @var string
+     */
+    private $current_dir_type = '';
 
     /**
      * Constructor
      */
     public function __construct() {
-        // Schedule cleanup jika belum
         if (!wp_next_scheduled('docgen_implementation_cleanup_temp')) {
             wp_schedule_event(time(), 'daily', 'docgen_implementation_cleanup_temp');
         }
@@ -54,39 +59,69 @@ class DocGen_Implementation_Directory_Handler {
     }
 
     /**
-     * Validate directory path
-     * @param string $path Directory path to validate
-     * @return bool|WP_Error True if valid, WP_Error if invalid
+     * Set current directory type for context-aware validation
+     */
+    public function set_directory_type($type) {
+        $this->current_dir_type = $type;
+    }
+
+    /**
+     * Validate directory path with improved checks
      */
     public function validate_directory_path($path) {
+        // Get context for error messages
+        $context = empty($this->current_dir_type) ? 'Directory' : $this->current_dir_type;
+
         // Check for directory traversal attempts
         if (strpos($path, '..') !== false) {
             return new WP_Error(
                 'invalid_path',
-                __('Invalid directory path detected', 'docgen-implementation')
+                sprintf(__('%s path contains invalid navigation tokens', 'docgen-implementation'), $context)
             );
         }
 
-        // Check if path is absolute
-        if (!path_is_absolute($path)) {
-            return new WP_Error(
-                'relative_path',
-                __('Directory path must be absolute', 'docgen-implementation')
-            );
-        }
-
-        // Check if path is within WordPress directory
+        // Get WordPress root paths
         $wp_root = untrailingslashit(ABSPATH);
-        if (strpos($path, $wp_root) !== 0) {
+        $wp_content = WP_CONTENT_DIR;
+        $wp_uploads = wp_upload_dir()['basedir'];
+
+        // Check if path starts with WordPress paths
+        $valid_roots = array($wp_root, $wp_content, $wp_uploads);
+        $is_valid_wp_path = false;
+
+        foreach ($valid_roots as $root) {
+            if (strpos($path, $root) === 0) {
+                $is_valid_wp_path = true;
+                break;
+            }
+        }
+
+        if (!$is_valid_wp_path) {
             return new WP_Error(
                 'outside_wordpress',
-                __('Directory must be within WordPress installation', 'docgen-implementation')
+                sprintf(__('%s must be within WordPress installation', 'docgen-implementation'), $context)
+            );
+        }
+
+        // Check if path is writable or can be created
+        $parent_dir = dirname($path);
+        if (!is_dir($path) && !is_writable($parent_dir)) {
+            return new WP_Error(
+                'not_writable',
+                sprintf(__('%s parent directory is not writable', 'docgen-implementation'), $context)
+            );
+        }
+
+        if (is_dir($path) && !is_writable($path)) {
+            return new WP_Error(
+                'not_writable',
+                sprintf(__('%s is not writable', 'docgen-implementation'), $context)
             );
         }
 
         return true;
     }
-
+    
     /**
      * Create directory with proper permissions
      * @param string $path Directory path
