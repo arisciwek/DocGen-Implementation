@@ -124,6 +124,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         ));
     }
 
+
     /**
      * Handle AJAX directory test
      */
@@ -134,34 +135,62 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             wp_send_json_error(__('Permission denied', 'docgen-implementation'));
         }
         
+        // Get uploads directory
+        $upload_dir = wp_upload_dir();
+        $upload_base = $upload_dir['basedir'];
+        
+        // Get directory from POST and build full path
         $directory = sanitize_text_field($_POST['directory']);
-        $validation = $this->directory_handler->validate_directory_path($directory);
+        $full_path = trailingslashit($upload_base) . $directory;
+        
+        $dir_type = sanitize_text_field($_POST['type'] ?? 'Temporary Directory');
+        
+        // Debug: Tampilkan path yang akan divalidasi
+        error_log('Testing directory: ' . $full_path);
+        
+        // Set directory type for context
+        $this->directory_handler->set_directory_type($dir_type);
+        
+        // Validate with full path
+        $validation = $this->directory_handler->validate_directory_path($full_path);
         
         if (is_wp_error($validation)) {
-            wp_send_json_error($validation->get_error_message());
+            wp_send_json_error(sprintf(
+                __('Failed to validate %s: %s', 'docgen-implementation'),
+                strtolower($dir_type),
+                $validation->get_error_message()
+            ));
         }
         
         // Create directory if needed
-        $result = $this->directory_handler->create_directory($directory);
-        if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message());
+        $result = wp_mkdir_p($full_path);
+        if (!$result) {
+            wp_send_json_error(sprintf(
+                __('Failed to create %s', 'docgen-implementation'),
+                strtolower($dir_type)
+            ));
         }
         
-        // Get directory stats
-        $stats = $this->directory_handler->get_directory_stats($directory);
+        // Get directory stats with full path
+        $stats = $this->directory_handler->get_directory_stats($full_path);
         if (is_wp_error($stats)) {
-            wp_send_json_error($stats->get_error_message());
+            wp_send_json_error(sprintf(
+                __('Failed to get %s stats: %s', 'docgen-implementation'),
+                strtolower($dir_type),
+                $stats->get_error_message()
+            ));
         }
         
         wp_send_json_success(array(
-            'message' => __('Directory test successful!', 'docgen-implementation'),
+            'message' => sprintf(__('%s test successful!', 'docgen-implementation'), $dir_type),
             'stats' => $stats,
             'exists' => true,
-            'writable' => is_writable($directory),
-            'free_space' => size_format($stats['free_space']),
-            'path' => $directory
+            'writable' => is_writable($full_path),
+            'free_space' => size_format(disk_free_space($full_path)),
+            'path' => $full_path
         ));
     }
+
 
     /**
      * Handle AJAX template directory test
@@ -173,23 +202,42 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             wp_send_json_error(__('Permission denied', 'docgen-implementation'));
         }
         
+        // Get uploads directory
+        $upload_dir = wp_upload_dir();
+        $upload_base = $upload_dir['basedir'];
+        
+        // Get directory from POST and build full path
         $directory = sanitize_text_field($_POST['directory']);
-        $validation = $this->directory_handler->validate_directory_path($directory);
+        $full_path = trailingslashit($upload_base) . $directory;
+        
+        // Debug log
+        error_log('Testing template directory: ' . $full_path);
+        
+        // Set directory type for context
+        $this->directory_handler->set_directory_type('Template Directory');
+        
+        $validation = $this->directory_handler->validate_directory_path($full_path);
         
         if (is_wp_error($validation)) {
             wp_send_json_error($validation->get_error_message());
         }
         
         // Create directory if needed
-        $result = $this->directory_handler->create_directory($directory);
-        if (is_wp_error($result)) {
-            wp_send_json_error($result->get_error_message());
+        $result = wp_mkdir_p($full_path);
+        if (!$result) {
+            wp_send_json_error(sprintf(
+                __('Failed to create template directory: %s', 'docgen-implementation'),
+                'Permission denied'
+            ));
         }
         
         // Scan for templates
-        $templates = $this->directory_handler->scan_template_files($directory);
+        $templates = $this->directory_handler->scan_template_files($full_path);
         if (is_wp_error($templates)) {
-            wp_send_json_error($templates->get_error_message());
+            wp_send_json_error(sprintf(
+                __('Failed to scan templates: %s', 'docgen-implementation'),
+                $templates->get_error_message()
+            ));
         }
         
         // Format template info
@@ -209,10 +257,12 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             'template_count' => count($templates),
             'valid_count' => count(array_filter($templates, function($t) { return $t['is_valid']; })),
             'exists' => true,
-            'readable' => is_readable($directory),
-            'path' => $directory
+            'readable' => is_readable($full_path),
+            'path' => $full_path
         ));
     }
+
+
 
     /**
      * Handle AJAX get directory stats
@@ -288,7 +338,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
         $settings = array(
             'temp_dir' => trailingslashit($upload_base) . $temp_folder,
-            'template_dir' => trailingslashit($content_base) . $template_folder,
+            'template_dir' => trailingslashit($upload_base) . $template_folder,
             'output_format' => sanitize_text_field($data['output_format'] ?? 'docx'),
             'debug_mode' => isset($data['debug_mode'])
         );

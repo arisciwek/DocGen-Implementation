@@ -119,7 +119,7 @@ add_action('plugins_loaded', 'docgen_implementation_init');
 
 /**
  * Plugin activation
- */
+ *
 function docgen_implementation_activate() {
     // Create required directories
     $upload_dir = wp_upload_dir();
@@ -141,7 +141,7 @@ function docgen_implementation_activate() {
     // Set default settings
     $default_settings = array(
         'temp_dir' => $temp_dir,
-        'template_dir' => trailingslashit(WP_CONTENT_DIR) . 'docgen-templates',
+        'template_dir' => trailingslashit($upload_base) . 'docgen-templates',
         'output_format' => 'docx',
         'debug_mode' => false
     );
@@ -153,6 +153,49 @@ function docgen_implementation_activate() {
     flush_rewrite_rules();
 }
 register_activation_hook(__FILE__, 'docgen_implementation_activate');
+*/
+
+/**
+ * Plugin activation
+ */
+function docgen_implementation_activate() {
+    // Get upload directory
+    $upload_dir = wp_upload_dir();
+    $upload_base = $upload_dir['basedir'];
+    
+    require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
+    $directory_handler = new DocGen_Implementation_Directory_Handler();
+    
+    // Set default settings
+    $default_settings = array(
+        'temp_dir' => trailingslashit($upload_base) . 'docgen-temp',
+        'template_dir' => trailingslashit($upload_base) . 'docgen-templates',
+        'output_format' => 'docx',
+        'debug_mode' => false
+    );
+    
+    // Buat direktori jika belum ada menggunakan method yang sudah ada
+    foreach (array('docgen-temp', 'docgen-templates') as $dir) {
+        $full_path = trailingslashit($upload_base) . $dir;
+        if (!file_exists($full_path)) {
+            wp_mkdir_p($full_path);
+            // Set basic security
+            @chmod($full_path, 0755);
+            @file_put_contents($full_path . '/index.php', '<?php // Silence is golden.');
+        }
+    }
+    
+    // Update/create settings
+    if (!get_option('docgen_implementation_settings')) {
+        add_option('docgen_implementation_settings', $default_settings);
+    } else {
+        update_option('docgen_implementation_settings', $default_settings);
+    }
+
+    flush_rewrite_rules();
+}
+register_activation_hook(__FILE__, 'docgen_implementation_activate');
+
 
 /**
  * Plugin deactivation
@@ -171,6 +214,10 @@ function docgen_implementation_deactivate() {
     // Clear scheduled hooks
     wp_clear_scheduled_hook('docgen_implementation_cleanup_temp');
 
+    // Hapus settings dari database
+    delete_option('docgen_implementation_settings');
+
     flush_rewrite_rules();
 }
 register_deactivation_hook(__FILE__, 'docgen_implementation_deactivate');
+

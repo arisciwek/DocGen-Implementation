@@ -72,6 +72,9 @@ class DocGen_Implementation_Directory_Handler {
         // Get context for error messages
         $context = empty($this->current_dir_type) ? 'Directory' : $this->current_dir_type;
 
+        // Debug: Lihat nilai path yang divalidasi
+        error_log('Validating path: ' . $path);
+
         // Check for directory traversal attempts
         if (strpos($path, '..') !== false) {
             return new WP_Error(
@@ -85,15 +88,23 @@ class DocGen_Implementation_Directory_Handler {
         $wp_content = WP_CONTENT_DIR;
         $wp_uploads = wp_upload_dir()['basedir'];
 
-        // Check if path starts with WordPress paths
-        $valid_roots = array($wp_root, $wp_content, $wp_uploads);
-        $is_valid_wp_path = false;
+        // Debug: Lihat nilai path yang diperbolehkan
+        error_log('WP Root: ' . $wp_root);
+        error_log('WP Content: ' . $wp_content);
+        error_log('WP Uploads: ' . $wp_uploads);
 
-        foreach ($valid_roots as $root) {
-            if (strpos($path, $root) === 0) {
-                $is_valid_wp_path = true;
-                break;
-            }
+        // Normalize paths untuk perbandingan yang konsisten
+        $path = str_replace('\\', '/', $path);
+        $wp_root = str_replace('\\', '/', $wp_root);
+        $wp_content = str_replace('\\', '/', $wp_content);
+        $wp_uploads = str_replace('\\', '/', $wp_uploads);
+
+        // Check if path starts with WordPress paths
+        $is_valid_wp_path = false;
+        if (strpos($path, $wp_root) === 0 || 
+            strpos($path, $wp_content) === 0 || 
+            strpos($path, $wp_uploads) === 0) {
+            $is_valid_wp_path = true;
         }
 
         if (!$is_valid_wp_path) {
