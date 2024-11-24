@@ -34,6 +34,42 @@ define('DOCGEN_IMPLEMENTATION_URL', plugin_dir_url(__FILE__));
 define('DOCGEN_IMPLEMENTATION_BASENAME', plugin_basename(__FILE__));
 
 /**
+ * Autoloader untuk class-class plugin
+ */
+spl_autoload_register(function($class) {
+    // Base namespace untuk plugin
+    $namespace = 'DocGen_Implementation_';
+    
+    // Check if class uses our namespace
+    if (strpos($class, $namespace) !== 0) {
+        return;
+    }
+
+    // Remove namespace from class name
+    $class_name = str_replace($namespace, '', $class);
+    
+    // Convert class name to filename
+    $filename = 'class-' . strtolower(
+        str_replace('_', '-', $class_name)
+    ) . '.php';
+
+    // Different paths for different types of classes
+    $possible_paths = array(
+        DOCGEN_IMPLEMENTATION_DIR . 'admin/' . $filename,
+        DOCGEN_IMPLEMENTATION_DIR . 'includes/' . $filename,
+        DOCGEN_IMPLEMENTATION_DIR . 'modules/' . $filename
+    );
+
+    // Try to load the file
+    foreach ($possible_paths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            break;
+        }
+    }
+});
+
+/**
  * Check WP DocGen dependency
  */
 function docgen_implementation_check_dependencies() {
@@ -62,13 +98,12 @@ function docgen_implementation_init() {
 
     // Load required files
     require_once DOCGEN_IMPLEMENTATION_DIR . 'includes/class-module-loader.php';
-    require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-admin-menu.php';
 
     // Initialize module loader
     $module_loader = new DocGen_Implementation_Module_Loader();
     $module_loader->discover_modules();
 
-    // Initialize admin menu
+    // Initialize admin menu - will handle loading of other admin classes
     DocGen_Implementation_Admin_Menu::get_instance();
 
     // Load text domain
@@ -83,57 +118,30 @@ function docgen_implementation_init() {
 add_action('plugins_loaded', 'docgen_implementation_init');
 
 /**
- * Create secure temporary directory
- * @param string $dir_path Full path to directory
- * @return bool True on success
- */
-function docgen_implementation_create_secure_directory($dir_path) {
-    if (!file_exists($dir_path)) {
-        if (!wp_mkdir_p($dir_path)) {
-            return false;
-        }
-        
-        // Create .htaccess
-        $htaccess = $dir_path . '/.htaccess';
-        if (!file_exists($htaccess)) {
-            $rules = "deny from all\n";
-            if (!@file_put_contents($htaccess, $rules)) {
-                return false;
-            }
-        }
-
-        // Create empty index.php
-        $index = $dir_path . '/index.php';
-        if (!file_exists($index)) {
-            if (!@file_put_contents($index, "<?php\n// Silence is golden.")) {
-                return false;
-            }
-        }
-    }
-    
-    return true;
-}
-
-/**
  * Plugin activation
  */
 function docgen_implementation_activate() {
     // Create required directories
     $upload_dir = wp_upload_dir();
-    $temp_dir = $upload_dir['basedir'] . '/docgen-impl-temp';
+    $temp_dir = $upload_dir['basedir'] . '/docgen-temp';
     
-    // Create secure directory
-    if (!docgen_implementation_create_secure_directory($temp_dir)) {
-        wp_die(
-            __('Could not create temporary directory. Please check directory permissions.', 'docgen-implementation'),
-            __('Plugin Activation Failed', 'docgen-implementation'),
-            array('back_link' => true)
-        );
+    require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
+    $directory_handler = new DocGen_Implementation_Directory_Handler();
+    
+    // Create secure temp directory
+    $result = $directory_handler->create_secure_directory(
+        'docgen-temp',
+        $upload_dir['basedir']
+    );
+    
+    if (is_wp_error($result)) {
+        wp_die($result->get_error_message());
     }
 
     // Set default settings
     $default_settings = array(
         'temp_dir' => $temp_dir,
+        'template_dir' => trailingslashit(WP_CONTENT_DIR) . 'docgen-templates',
         'output_format' => 'docx',
         'debug_mode' => false
     );
@@ -150,11 +158,18 @@ register_activation_hook(__FILE__, 'docgen_implementation_activate');
  * Plugin deactivation
  */
 function docgen_implementation_deactivate() {
-    // Optional: Clean up temp files
+    // Get settings
     $settings = get_option('docgen_implementation_settings');
-    if (isset($settings['temp_dir']) && file_exists($settings['temp_dir'])) {
-        array_map('unlink', glob($settings['temp_dir'] . '/*.*'));
+    
+    // Clean up temp directory if exists
+    if (!empty($settings['temp_dir']) && file_exists($settings['temp_dir'])) {
+        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
+        $directory_handler = new DocGen_Implementation_Directory_Handler();
+        $directory_handler->cleanup_temp_files();
     }
+
+    // Clear scheduled hooks
+    wp_clear_scheduled_hook('docgen_implementation_cleanup_temp');
 
     flush_rewrite_rules();
 }

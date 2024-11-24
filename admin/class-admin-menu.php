@@ -9,11 +9,12 @@
  * 
  * Path: admin/class-admin-menu.php
  * 
+ * Description: Handles admin menu registration and page routing
+ * 
  * Changelog:
- * 1.0.0 - 2024-11-24
- * - Initial implementation
- * - Handles main admin menu registration
- * - Manages admin pages
+ * 1.0.0 - Initial implementation
+ * - Menu registration
+ * - Page routing to new class structure
  */
 
 if (!defined('ABSPATH')) {
@@ -23,7 +24,7 @@ if (!defined('ABSPATH')) {
 class DocGen_Implementation_Admin_Menu {
     /**
      * Menu instance
-     * @var DocGen_Implementation_Admin_Menu
+     * @var self
      */
     private static $instance = null;
 
@@ -34,22 +35,36 @@ class DocGen_Implementation_Admin_Menu {
     private $parent_slug = 'docgen-implementation';
 
     /**
-     * Admin pages
-     * @var array
+     * Dashboard page instance
+     * @var DocGen_Implementation_Dashboard_Page
      */
-    private $pages = array();
+    private $dashboard_page;
+
+    /**
+     * Settings page instance
+     * @var DocGen_Implementation_Settings_Page
+     */
+    private $settings_page;
 
     /**
      * Constructor
      */
     private function __construct() {
+        // Initialize page handlers
+        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-admin-page.php';
+        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-dashboard-page.php';
+        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-settings-page.php';
+        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
+
+        $this->dashboard_page = new DocGen_Implementation_Dashboard_Page();
+        $this->settings_page = new DocGen_Implementation_Settings_Page();
+
         add_action('admin_menu', array($this, 'register_menus'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
     }
 
     /**
      * Get menu instance
-     * @return DocGen_Implementation_Admin_Menu
+     * @return self
      */
     public static function get_instance() {
         if (is_null(self::$instance)) {
@@ -68,7 +83,7 @@ class DocGen_Implementation_Admin_Menu {
             __('DocGen Impl', 'docgen-implementation'),
             'manage_options',
             $this->parent_slug,
-            array($this, 'render_main_page'),
+            array($this->dashboard_page, 'render'),
             'dashicons-media-document',
             30
         );
@@ -80,7 +95,7 @@ class DocGen_Implementation_Admin_Menu {
             __('Dashboard', 'docgen-implementation'),
             'manage_options',
             $this->parent_slug,
-            array($this, 'render_main_page')
+            array($this->dashboard_page, 'render')
         );
 
         // Add settings submenu
@@ -90,81 +105,10 @@ class DocGen_Implementation_Admin_Menu {
             __('Settings', 'docgen-implementation'),
             'manage_options',
             $this->parent_slug . '-settings',
-            array($this, 'render_settings_page')
+            array($this->settings_page, 'render')
         );
 
         do_action('docgen_implementation_register_admin_menu');
-    }
-
-    /**
-     * Enqueue admin assets
-     */
-    public function enqueue_assets($hook) {
-        // Only load on our admin pages
-        if (strpos($hook, $this->parent_slug) === false) {
-            return;
-        }
-
-        // Enqueue admin styles
-        wp_enqueue_style(
-            'docgen-implementation-admin',
-            DOCGEN_IMPLEMENTATION_URL . 'assets/css/style.css',
-            array(),
-            DOCGEN_IMPLEMENTATION_VERSION
-        );
-
-        // Enqueue admin scripts
-        wp_enqueue_script(
-            'docgen-implementation-admin',
-            DOCGEN_IMPLEMENTATION_URL . 'assets/js/script.js',
-            array('jquery'),
-            DOCGEN_IMPLEMENTATION_VERSION,
-            true
-        );
-
-        // Localize script
-        wp_localize_script('docgen-implementation-admin', 'docgenImplementation', array(
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('docgen_implementation'),
-            'strings' => array(
-                'confirm' => __('Are you sure?', 'docgen-implementation'),
-                'success' => __('Success!', 'docgen-implementation'),
-                'error' => __('Error occurred.', 'docgen-implementation')
-            )
-        ));
-    }
-
-    /**
-     * Render main admin page
-     */
-    public function render_main_page() {
-        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-admin-page.php';
-        $page = new DocGen_Implementation_Admin_Page();
-        $page->render_dashboard();
-    }
-
-    /**
-     * Render settings page
-     */
-    public function render_settings_page() {
-        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-admin-page.php';
-        $page = new DocGen_Implementation_Admin_Page();
-        $page->render_settings();
-    }
-
-    /**
-     * Register admin page
-     * @param string $slug Page slug
-     * @param array $args Page arguments
-     */
-    public function register_page($slug, $args = array()) {
-        $this->pages[$slug] = wp_parse_args($args, array(
-            'title' => '',
-            'menu_title' => '',
-            'capability' => 'manage_options',
-            'callback' => null,
-            'position' => null
-        ));
     }
 
     /**

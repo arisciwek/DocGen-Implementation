@@ -1,7 +1,11 @@
 .
 ├── admin
 │   ├── class-admin-menu.php
+│   ├── __class-admin-page.php
 │   ├── class-admin-page.php
+│   ├── class-dashboard-page.php
+│   ├── class-directory-handler.php
+│   ├── class-settings-page.php
 │   └── js
 │       └── settings.js
 ├── assets
@@ -12,6 +16,7 @@
 ├── docgen-implementation.php
 ├── docs
 │   ├── docgen-implementation.md
+│   ├── pemecahan-class-admin-page-php.md
 │   ├── plugin-structure.md
 │   └── test-directory.md
 ├── includes
@@ -32,4 +37,4 @@
 ├── README.md
 └── tree.md
 
-14 directories, 18 files
+14 directories, 23 files
