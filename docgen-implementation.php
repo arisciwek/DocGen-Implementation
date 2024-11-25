@@ -196,32 +196,6 @@ function docgen_implementation_activate() {
 }
 register_activation_hook(__FILE__, 'docgen_implementation_activate');
 
-
-/**
- * Plugin deactivation
- *
-function docgen_implementation_deactivate() {
-    // Get settings
-    $settings = get_option('docgen_implementation_settings');
-    
-    // Clean up temp directory if exists
-    if (!empty($settings['temp_dir']) && file_exists($settings['temp_dir'])) {
-        require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
-        $directory_handler = new DocGen_Implementation_Directory_Handler();
-        $directory_handler->cleanup_temp_files();
-    }
-
-    // Clear scheduled hooks
-    wp_clear_scheduled_hook('docgen_implementation_cleanup_temp');
-
-    // Hapus settings dari database
-    // delete_option('docgen_implementation_settings');
-
-    flush_rewrite_rules();
-}
-*/
-
-
 /**
  * Plugin deactivation
  */

@@ -67,74 +67,70 @@ class DocGen_Implementation_Directory_Handler {
 
     /**
      * Validate directory path with improved checks
+     * @param string $path Directory path to validate
+     * @return bool|WP_Error True if valid, WP_Error if invalid
      */
     public function validate_directory_path($path) {
-        // Get context for error messages
-        $context = empty($this->current_dir_type) ? 'Directory' : $this->current_dir_type;
+        // Basic path validation
+        if (empty($path)) {
+            return new WP_Error(
+                'empty_path',
+                __('Directory path cannot be empty', 'docgen-implementation')
+            );
+        }
 
-        // Debug: Lihat nilai path yang divalidasi
-        error_log('Validating path: ' . $path);
+        // Normalize path for consistent checking
+        $path = wp_normalize_path($path);
+        
+        // Get WordPress root paths
+        $wp_root = wp_normalize_path(ABSPATH);
+        $wp_content = wp_normalize_path(WP_CONTENT_DIR);
+        $uploads_dir = wp_normalize_path(wp_upload_dir()['basedir']);
 
-        // Check for directory traversal attempts
+        // Check path within WordPress directories
+        $is_in_wp = (
+            strpos($path, $wp_root) === 0 ||
+            strpos($path, $wp_content) === 0 ||
+            strpos($path, $uploads_dir) === 0
+        );
+
+        if (!$is_in_wp) {
+            return new WP_Error(
+                'invalid_path',
+                __('Directory must be within WordPress installation', 'docgen-implementation')
+            );
+        }
+
+        // Check for directory traversal
         if (strpos($path, '..') !== false) {
             return new WP_Error(
                 'invalid_path',
-                sprintf(__('%s path contains invalid navigation tokens', 'docgen-implementation'), $context)
+                __('Directory path contains invalid navigation', 'docgen-implementation')
             );
         }
 
-        // Get WordPress root paths
-        $wp_root = untrailingslashit(ABSPATH);
-        $wp_content = WP_CONTENT_DIR;
-        $wp_uploads = wp_upload_dir()['basedir'];
-
-        // Debug: Lihat nilai path yang diperbolehkan
-        error_log('WP Root: ' . $wp_root);
-        error_log('WP Content: ' . $wp_content);
-        error_log('WP Uploads: ' . $wp_uploads);
-
-        // Normalize paths untuk perbandingan yang konsisten
-        $path = str_replace('\\', '/', $path);
-        $wp_root = str_replace('\\', '/', $wp_root);
-        $wp_content = str_replace('\\', '/', $wp_content);
-        $wp_uploads = str_replace('\\', '/', $wp_uploads);
-
-        // Check if path starts with WordPress paths
-        $is_valid_wp_path = false;
-        if (strpos($path, $wp_root) === 0 || 
-            strpos($path, $wp_content) === 0 || 
-            strpos($path, $wp_uploads) === 0) {
-            $is_valid_wp_path = true;
-        }
-
-        if (!$is_valid_wp_path) {
-            return new WP_Error(
-                'outside_wordpress',
-                sprintf(__('%s must be within WordPress installation', 'docgen-implementation'), $context)
-            );
-        }
-
-        // Check if path is writable or can be created
-        $parent_dir = dirname($path);
-        if (!is_dir($path) && !is_writable($parent_dir)) {
+        // Check if directory exists or can be created
+        if (!file_exists($path)) {
+            $parent_dir = dirname($path);
+            if (!is_writable($parent_dir)) {
+                return new WP_Error(
+                    'not_writable',
+                    __('Parent directory is not writable', 'docgen-implementation')
+                );
+            }
+        } else if (!is_writable($path)) {
             return new WP_Error(
                 'not_writable',
-                sprintf(__('%s parent directory is not writable', 'docgen-implementation'), $context)
-            );
-        }
-
-        if (is_dir($path) && !is_writable($path)) {
-            return new WP_Error(
-                'not_writable',
-                sprintf(__('%s is not writable', 'docgen-implementation'), $context)
+                __('Directory exists but is not writable', 'docgen-implementation')
             );
         }
 
         return true;
     }
-    
+
+
     /**
-     * Create directory with proper permissions
+     * Create directory with improved error handling
      * @param string $path Directory path
      * @param int $permissions Directory permissions (octal)
      * @return bool|WP_Error True on success, WP_Error on failure
@@ -156,12 +152,12 @@ class DocGen_Implementation_Directory_Handler {
             }
 
             // Set directory permissions
-            if (!chmod($path, $permissions)) {
-                return new WP_Error(
-                    'chmod_failed',
-                    __('Failed to set directory permissions', 'docgen-implementation')
-                );
+            if (!@chmod($path, $permissions)) {
+                error_log('Warning: Failed to set directory permissions for: ' . $path);
             }
+
+            // Create index.php for security
+            @file_put_contents($path . '/index.php', '<?php // Silence is golden.');
         }
 
         return true;
@@ -378,4 +374,5 @@ class DocGen_Implementation_Directory_Handler {
             'skipped' => $skipped
         );
     }
+
 }

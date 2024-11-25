@@ -62,6 +62,10 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         $this->page_slug = 'docgen-implementation-settings';
         $this->directory_handler = new DocGen_Implementation_Directory_Handler();
         
+        // Initialize template handler
+        $this->template_handler = new DocGen_Implementation_Directory_Handler();
+        $this->template_handler->set_directory_type('Template Directory');
+        
         parent::__construct();
 
         add_action('wp_ajax_upload_template', array($this, 'ajax_handle_template_upload'));
@@ -150,6 +154,8 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * Handle template file upload via AJAX
      */
     public function ajax_handle_template_upload() {
+        error_log('DocGen: Starting template upload handler');
+        
         check_ajax_referer('docgen_admin_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
@@ -174,116 +180,78 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * @param array $file $_FILES array element
      * @return array|WP_Error Upload result or error
      */
-    // Update method handle_template_upload dengan logging detail
     private function handle_template_upload($file) {
-    
-    // Get template directory
-    $settings = get_option('docgen_implementation_settings', array());
-    $template_dir = $settings['template_dir'] ?? '';
+        // Get template directory
+        $settings = get_option('docgen_implementation_settings', array());
+        $template_dir = $settings['template_dir'] ?? '';
 
-    // Log settings dan directory info
-    $this->debug_log('Upload started');
-    $this->debug_log('Settings', $settings);
-    $this->debug_log('Template directory', $template_dir);
-    
-    // Validate directory
-    $this->directory_handler->set_directory_type('Template Directory');
-    
-    // Log before validation
-    $this->debug_log('Attempting to validate directory path');
-    $validation = $this->directory_handler->validate_directory_path($template_dir);
-    
-    if (is_wp_error($validation)) {
-        $this->debug_log('Directory validation failed', array(
-            'error_code' => $validation->get_error_code(),
-            'error_message' => $validation->get_error_message()
-        ));
-        return $validation;
-    }
-    $this->debug_log('Directory validation passed');
+        error_log('DocGen Upload: Template directory: ' . $template_dir);
+        
+        // Validate directory
+        $validation = $this->template_handler->validate_directory_path($template_dir);
+        if (is_wp_error($validation)) {
+            error_log('DocGen Upload: Directory validation failed - ' . $validation->get_error_message());
+            return $validation;
+        }
 
-    // Create directory if needed
-    $this->debug_log('Attempting to create/verify directory');
-    $dir_result = $this->directory_handler->create_directory($template_dir);
-    if (is_wp_error($dir_result)) {
-        $this->debug_log('Directory creation failed', array(
-            'error_code' => $dir_result->get_error_code(),
-            'error_message' => $dir_result->get_error_message()
-        ));
-        return $dir_result;
-    }
-    $this->debug_log('Directory ready');
+        // Create directory if needed
+        $dir_result = $this->template_handler->create_directory($template_dir);
+        if (is_wp_error($dir_result)) {
+            error_log('DocGen Upload: Directory creation failed - ' . $dir_result->get_error_message());
+            return $dir_result;
+        }
 
-    // Validate file presence
-    if (!isset($file['tmp_name']) || empty($file['tmp_name'])) {
-        $this->debug_log('No file uploaded', $_FILES);
-        return new WP_Error('upload_error', __('No file uploaded', 'docgen-implementation'));
-    }
+        // Validate file presence
+        if (!isset($file['tmp_name']) || empty($file['tmp_name'])) {
+            error_log('DocGen Upload: No file uploaded');
+            return new WP_Error('upload_error', __('No file uploaded', 'docgen-implementation'));
+        }
 
-    // Check file extension
-    $allowed_types = array('docx', 'odt');
-    $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $this->debug_log('File extension check', array(
-        'filename' => $file['name'],
-        'extension' => $file_ext,
-        'allowed_types' => $allowed_types
-    ));
-    
-    if (!in_array($file_ext, $allowed_types)) {
-        $this->debug_log('Invalid file type', $file_ext);
-        return new WP_Error(
-            'invalid_type',
-            __('Invalid file type. Only DOCX and ODT files are allowed.', 'docgen-implementation')
+        // Check file extension
+        $allowed_types = array('docx', 'odt');
+        $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        
+        if (!in_array($file_ext, $allowed_types)) {
+            error_log('DocGen Upload: Invalid file type - ' . $file_ext);
+            return new WP_Error(
+                'invalid_type',
+                __('Invalid file type. Only DOCX and ODT files are allowed.', 'docgen-implementation')
+            );
+        }
+
+        // Prepare for file move
+        $filename = sanitize_file_name($file['name']);
+        $target_path = trailingslashit($template_dir) . $filename;
+
+        // Move file
+        if (!move_uploaded_file($file['tmp_name'], $target_path)) {
+            error_log('DocGen Upload: Failed to move uploaded file');
+            return new WP_Error(
+                'move_failed',
+                __('Failed to save uploaded file', 'docgen-implementation')
+            );
+        }
+
+        // Validate template structure
+        if (!$this->template_handler->validate_template_file($target_path)) {
+            error_log('DocGen Upload: Invalid template structure, removing file');
+            @unlink($target_path);
+            return new WP_Error(
+                'invalid_template',
+                __('The uploaded file is not a valid template', 'docgen-implementation')
+            );
+        }
+
+        $result = array(
+            'path' => $target_path,
+            'name' => $filename,
+            'size' => filesize($target_path),
+            'type' => $file_ext
         );
+        
+        error_log('DocGen Upload: Upload template completed successfully');
+        return $result;
     }
-
-    // Prepare for file move
-    $filename = sanitize_file_name($file['name']);
-    $target_path = trailingslashit($template_dir) . $filename;
-    $this->debug_log('Preparing file move', array(
-        'source' => $file['tmp_name'],
-        'target' => $target_path,
-        'permissions' => array(
-            'source_exists' => file_exists($file['tmp_name']),
-            'source_readable' => is_readable($file['tmp_name']),
-            'target_dir_writable' => is_writable(dirname($target_path))
-        )
-    ));
-
-    // Move file
-    if (!move_uploaded_file($file['tmp_name'], $target_path)) {
-        $this->debug_log('Failed to move uploaded file', array(
-            'php_error' => error_get_last()
-        ));
-        return new WP_Error(
-            'move_failed',
-            __('Failed to save uploaded file', 'docgen-implementation')
-        );
-    }
-    $this->debug_log('File moved successfully');
-
-    // Validate template structure
-    $this->debug_log('Validating template structure');
-    if (!$this->directory_handler->validate_template_file($target_path)) {
-        $this->debug_log('Invalid template structure, removing file');
-        @unlink($target_path);
-        return new WP_Error(
-            'invalid_template',
-            __('The uploaded file is not a valid template', 'docgen-implementation')
-        );
-    }
-
-    $result = array(
-        'path' => $target_path,
-        'name' => $filename,
-        'size' => filesize($target_path),
-        'type' => $file_ext
-    );
-    $this->debug_log('Upload completed successfully', $result);
-    
-    return $result;
-}
-
 
 
     /**
@@ -304,6 +272,15 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             'docgen-directory-migration',
             DOCGEN_IMPLEMENTATION_URL . 'admin/js/directory-migration.js',
             array('jquery', 'docgen-settings'), // Dependency pada settings.js
+            DOCGEN_IMPLEMENTATION_VERSION,
+            true
+        );
+
+        // Enqueue template upload handler
+        wp_enqueue_script(
+            'docgen-template-upload',
+            DOCGEN_IMPLEMENTATION_URL . 'admin/js/template-upload.js',
+            array('jquery', 'docgen-settings'),
             DOCGEN_IMPLEMENTATION_VERSION,
             true
         );

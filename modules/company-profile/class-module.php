@@ -117,14 +117,7 @@ class DocGen_Implementation_Company_Profile_Module {
                     require_once dirname(__FILE__) . '/includes/class-provider-json.php';
                     $provider = new DocGen_Implementation_Company_Profile_JSON_Provider();
                     break;
-            }
-            
-            // Debug: Log provider type and data
-            if (WP_DEBUG) {
-                error_log('Using provider: ' . get_class($provider));
-                error_log('Provider data: ' . print_r($provider->get_data(), true));
-            }
-            
+            }            
             // Generate document
             $result = wp_docgen()->generate($provider);
             
