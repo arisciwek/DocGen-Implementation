@@ -92,33 +92,48 @@ class DocGen_Implementation_Company_Profile_Module {
     }
 
     /**
-     * Handle profile generation with detailed error handling
+     * Handle profile generation with provider selection
      */
     public function handle_generate_profile() {
         check_ajax_referer('docgen_implementation');
 
         try {
-            // Debug: Cek data form
-            error_log('POST data: ' . print_r($_POST, true));
-            
-            // Load provider
+            // Load base provider class first
             require_once dirname(__FILE__) . '/includes/class-provider.php';
-            $provider = new DocGen_Implementation_Company_Profile_Provider();
+
+            // Get source type from request
+            $source = sanitize_text_field($_POST['source'] ?? 'json');
             
-            // Debug: Cek data provider
-            error_log('Provider data: ' . print_r($provider->get_data(), true));
+            // Initialize appropriate provider based on source
+            switch ($source) {
+                case 'form':
+                    require_once dirname(__FILE__) . '/includes/class-provider-form.php';
+                    $form_data = $_POST['form_data'] ?? '';
+                    $provider = new DocGen_Implementation_Company_Profile_Form_Provider($form_data);
+                    break;
+                    
+                case 'json':
+                default:
+                    require_once dirname(__FILE__) . '/includes/class-provider-json.php';
+                    $provider = new DocGen_Implementation_Company_Profile_JSON_Provider();
+                    break;
+            }
+            
+            // Debug: Log provider type and data
+            if (WP_DEBUG) {
+                error_log('Using provider: ' . get_class($provider));
+                error_log('Provider data: ' . print_r($provider->get_data(), true));
+            }
             
             // Generate document
             $result = wp_docgen()->generate($provider);
-            
-            // Debug: Cek hasil generate
-            error_log('Generate result: ' . print_r($result, true));
             
             if (is_wp_error($result)) {
                 error_log('Generate error: ' . $result->get_error_message());
                 wp_send_json_error($result->get_error_message());
             }
 
+            // Get URL for download
             $upload_dir = wp_upload_dir();
             $file_url = str_replace($upload_dir['basedir'], $upload_dir['baseurl'], $result);
             
@@ -128,11 +143,10 @@ class DocGen_Implementation_Company_Profile_Module {
             ));
 
         } catch (Exception $e) {
-            error_log('Exception: ' . $e->getMessage());
+            error_log('DocGen Exception: ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
     }
-
 
 
     /**
