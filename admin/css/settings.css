@@ -162,3 +162,15 @@
     padding-bottom: 12px;
     border-bottom: 1px solid #e2e4e7;
 }
+
+/* Template Upload Tab */
+.template-upload-tab {
+    padding: 15px;
+}
+
+.template-upload-area {
+    border: 2px dashed #b4b9be;
+    padding: 20px;
+    text-align: center;
+    margin: 10px 0;
+}

@@ -76,6 +76,53 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     protected function get_page_title() {
         return __('DocGen Implementation Settings', 'docgen-implementation');
     }
+    
+    /**
+     * Render template settings tab
+     * @param array $settings Current settings
+     */
+    private function render_template_settings($settings) {
+        require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/template-settings.php';
+    }
+
+    /**
+     * Render template list 
+     * @param string $template_dir Template directory path
+     */
+    private function render_template_list($template_dir) {
+        if (!is_dir($template_dir)) {
+            return;
+        }
+
+        $templates = $this->dir_handler->scan_template_files($template_dir);
+        
+        if (empty($templates)) {
+            echo '<p>' . esc_html__('No templates found.', 'docgen-implementation') . '</p>';
+            return;
+        }
+
+        echo '<h3>' . esc_html__('Current Templates', 'docgen-implementation') . '</h3>';
+        echo '<table class="wp-list-table widefat fixed striped">';
+        echo '<thead><tr>';
+        echo '<th>' . esc_html__('Template Name', 'docgen-implementation') . '</th>';
+        echo '<th>' . esc_html__('Size', 'docgen-implementation') . '</th>';
+        echo '<th>' . esc_html__('Modified', 'docgen-implementation') . '</th>';
+        echo '<th>' . esc_html__('Status', 'docgen-implementation') . '</th>';
+        echo '</tr></thead><tbody>';
+
+        foreach ($templates as $template) {
+            echo '<tr>';
+            echo '<td>' . esc_html($template['name']) . '</td>';
+            echo '<td>' . esc_html(size_format($template['size'])) . '</td>';
+            echo '<td>' . esc_html(date_i18n(get_option('date_format'), $template['modified'])) . '</td>';
+            echo '<td>' . ($template['is_valid'] ? 
+                '<span class="valid">✓</span>' : 
+                '<span class="invalid">✗</span>') . '</td>';
+            echo '</tr>';
+        }
+
+        echo '</tbody></table>';
+    }
 
     /**
      * Enqueue page specific assets
@@ -349,7 +396,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
     /**
      * Render settings page
-     */
+     *
     public function render() {
         $settings = get_option('docgen_implementation_settings', array());
         $submission_result = $this->handle_submissions();
@@ -374,6 +421,48 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         echo '</form>';
         echo '</div>';
     }
+    */
+
+    public function render() {
+        $settings = get_option('docgen_implementation_settings', array());
+        $submission_result = $this->handle_submissions();
+        $current_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'general';
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html($this->get_page_title()) . '</h1>';
+
+        // Display errors if any
+        if (is_wp_error($submission_result)) {
+            echo '<div class="notice notice-error"><p>' . esc_html($submission_result->get_error_message()) . '</p></div>';
+        }
+        
+        settings_errors('docgen_implementation_settings');
+
+        // Add tabs
+        echo '<h2 class="nav-tab-wrapper">';
+        echo '<a href="?page=' . esc_attr($this->page_slug) . '&tab=general" class="nav-tab ' . ($current_tab === 'general' ? 'nav-tab-active' : '') . '">' . esc_html__('General', 'docgen-implementation') . '</a>';
+        echo '<a href="?page=' . esc_attr($this->page_slug) . '&tab=templates" class="nav-tab ' . ($current_tab === 'templates' ? 'nav-tab-active' : '') . '">' . esc_html__('Templates', 'docgen-implementation') . '</a>';
+        echo '</h2>';
+
+        echo '<form method="post" action="" enctype="multipart/form-data">';
+        wp_nonce_field('docgen_implementation_settings', 'docgen_implementation_settings_nonce');
+
+        // Render tab content
+        switch ($current_tab) {
+            case 'templates':
+                $this->render_template_settings($settings);
+                break;
+            default:
+                $this->render_directory_settings($settings);
+                $this->render_general_settings($settings);
+                break;
+        }
+
+        submit_button();
+        echo '</form>';
+        echo '</div>';
+    }
+
 
     /**
      * Render directory settings section
@@ -471,4 +560,5 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
         echo '</table>';
     }
+
 }
