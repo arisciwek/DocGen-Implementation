@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
     die('Direct access not permitted.');
 }
 
-// Get saved company data
+// Get saved company data from data.json
 $company_data = get_option('docgen_company_profile_data', array());
 
 // Default values for all fields
