@@ -63,7 +63,8 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         $this->directory_handler = new DocGen_Implementation_Directory_Handler();
         
         parent::__construct();
-        
+
+        add_action('wp_ajax_upload_template', array($this, 'ajax_handle_template_upload'));
         add_action('wp_ajax_test_directory', array($this, 'ajax_test_directory'));
         add_action('wp_ajax_test_template_dir', array($this, 'ajax_test_template_dir'));
         add_action('wp_ajax_get_directory_stats', array($this, 'ajax_get_directory_stats'));
@@ -76,7 +77,28 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     protected function get_page_title() {
         return __('DocGen Implementation Settings', 'docgen-implementation');
     }
-    
+
+    /**
+     * Render general settings section
+     * Uses separated template file for better organization
+     * 
+     * @param array $settings Current settings
+     */
+    private function render_general_settings($settings) {
+        // Include general settings template
+        require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/general-settings.php';
+    }
+
+    /**
+     * Render directory settings section
+     * Uses separated template file for better organization
+     * 
+     * @param array $settings Current settings
+     */
+    private function render_directory_settings($settings) {
+        // Include directory settings template
+        require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/directory-settings.php';
+    }    
     /**
      * Render template settings tab
      * @param array $settings Current settings
@@ -125,6 +147,146 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     }
 
     /**
+     * Handle template file upload via AJAX
+     */
+    public function ajax_handle_template_upload() {
+        check_ajax_referer('docgen_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Permission denied', 'docgen-implementation'));
+        }
+
+        if (empty($_FILES['template_file'])) {
+            wp_send_json_error(__('No file uploaded', 'docgen-implementation'));
+        }
+
+        $result = $this->handle_template_upload($_FILES['template_file']);
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
+        }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Handle template file upload
+     * @param array $file $_FILES array element
+     * @return array|WP_Error Upload result or error
+     */
+    // Update method handle_template_upload dengan logging detail
+    private function handle_template_upload($file) {
+    
+    // Get template directory
+    $settings = get_option('docgen_implementation_settings', array());
+    $template_dir = $settings['template_dir'] ?? '';
+
+    // Log settings dan directory info
+    $this->debug_log('Upload started');
+    $this->debug_log('Settings', $settings);
+    $this->debug_log('Template directory', $template_dir);
+    
+    // Validate directory
+    $this->directory_handler->set_directory_type('Template Directory');
+    
+    // Log before validation
+    $this->debug_log('Attempting to validate directory path');
+    $validation = $this->directory_handler->validate_directory_path($template_dir);
+    
+    if (is_wp_error($validation)) {
+        $this->debug_log('Directory validation failed', array(
+            'error_code' => $validation->get_error_code(),
+            'error_message' => $validation->get_error_message()
+        ));
+        return $validation;
+    }
+    $this->debug_log('Directory validation passed');
+
+    // Create directory if needed
+    $this->debug_log('Attempting to create/verify directory');
+    $dir_result = $this->directory_handler->create_directory($template_dir);
+    if (is_wp_error($dir_result)) {
+        $this->debug_log('Directory creation failed', array(
+            'error_code' => $dir_result->get_error_code(),
+            'error_message' => $dir_result->get_error_message()
+        ));
+        return $dir_result;
+    }
+    $this->debug_log('Directory ready');
+
+    // Validate file presence
+    if (!isset($file['tmp_name']) || empty($file['tmp_name'])) {
+        $this->debug_log('No file uploaded', $_FILES);
+        return new WP_Error('upload_error', __('No file uploaded', 'docgen-implementation'));
+    }
+
+    // Check file extension
+    $allowed_types = array('docx', 'odt');
+    $file_ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $this->debug_log('File extension check', array(
+        'filename' => $file['name'],
+        'extension' => $file_ext,
+        'allowed_types' => $allowed_types
+    ));
+    
+    if (!in_array($file_ext, $allowed_types)) {
+        $this->debug_log('Invalid file type', $file_ext);
+        return new WP_Error(
+            'invalid_type',
+            __('Invalid file type. Only DOCX and ODT files are allowed.', 'docgen-implementation')
+        );
+    }
+
+    // Prepare for file move
+    $filename = sanitize_file_name($file['name']);
+    $target_path = trailingslashit($template_dir) . $filename;
+    $this->debug_log('Preparing file move', array(
+        'source' => $file['tmp_name'],
+        'target' => $target_path,
+        'permissions' => array(
+            'source_exists' => file_exists($file['tmp_name']),
+            'source_readable' => is_readable($file['tmp_name']),
+            'target_dir_writable' => is_writable(dirname($target_path))
+        )
+    ));
+
+    // Move file
+    if (!move_uploaded_file($file['tmp_name'], $target_path)) {
+        $this->debug_log('Failed to move uploaded file', array(
+            'php_error' => error_get_last()
+        ));
+        return new WP_Error(
+            'move_failed',
+            __('Failed to save uploaded file', 'docgen-implementation')
+        );
+    }
+    $this->debug_log('File moved successfully');
+
+    // Validate template structure
+    $this->debug_log('Validating template structure');
+    if (!$this->directory_handler->validate_template_file($target_path)) {
+        $this->debug_log('Invalid template structure, removing file');
+        @unlink($target_path);
+        return new WP_Error(
+            'invalid_template',
+            __('The uploaded file is not a valid template', 'docgen-implementation')
+        );
+    }
+
+    $result = array(
+        'path' => $target_path,
+        'name' => $filename,
+        'size' => filesize($target_path),
+        'type' => $file_ext
+    );
+    $this->debug_log('Upload completed successfully', $result);
+    
+    return $result;
+}
+
+
+
+    /**
      * Enqueue page specific assets
      */
     protected function enqueue_page_assets() {
@@ -146,14 +308,15 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             true
         );
 
-        // Localize script dengan tambahan strings untuk migrasi
+        // Localize script dengan strings yang digabungkan
         wp_localize_script('docgen-settings', 'docgenSettings', array(
             'nonce' => wp_create_nonce('docgen_admin_nonce'),
-            'strings' => array(
+            'strings' => array_merge(array(
+                // String yang sudah ada
                 'testSuccess' => __('Test successful!', 'docgen-implementation'),
                 'testFailed' => __('Test failed:', 'docgen-implementation'),
                 'selectTemplate' => __('Select template...', 'docgen-implementation'),
-                // Tambahan strings untuk migrasi
+                // Strings untuk migrasi
                 'migrationPrompt' => __('Directory changes detected. Migration may be needed:', 'docgen-implementation'),
                 'migrating' => __('Migrating files...', 'docgen-implementation'),
                 'migrationComplete' => __('Migration completed!', 'docgen-implementation'),
@@ -167,7 +330,15 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
                 'templateDir' => __('Template Directory', 'docgen-implementation'),
                 'tempDir' => __('Temporary Directory', 'docgen-implementation'),
                 'migrationConfirm' => __('Do you want to migrate these files?', 'docgen-implementation')
-            )
+            ), array(
+                // String baru untuk upload template
+                'uploadSuccess' => __('Template uploaded successfully!', 'docgen-implementation'),
+                'uploadFailed' => __('Failed to upload template:', 'docgen-implementation'),
+                'invalidType' => __('Invalid file type. Only DOCX and ODT files are allowed.', 'docgen-implementation'),
+                'serverError' => __('Server error occurred', 'docgen-implementation'),
+                'uploadInProgress' => __('Uploading template...', 'docgen-implementation'),
+                'refreshing' => __('Refreshing template list...', 'docgen-implementation')
+            ))
         ));
     }
 
@@ -191,9 +362,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         $full_path = trailingslashit($upload_base) . $directory;
         
         $dir_type = sanitize_text_field($_POST['type'] ?? 'Temporary Directory');
-        
-        // Debug: Tampilkan path yang akan divalidasi
-        error_log('Testing directory: ' . $full_path);
         
         // Set directory type for context
         $this->directory_handler->set_directory_type($dir_type);
@@ -256,9 +424,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         // Get directory from POST and build full path
         $directory = sanitize_text_field($_POST['directory']);
         $full_path = trailingslashit($upload_base) . $directory;
-        
-        // Debug log
-        error_log('Testing template directory: ' . $full_path);
         
         // Set directory type for context
         $this->directory_handler->set_directory_type('Template Directory');
@@ -332,7 +497,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     }
 
 
-
     /**
      * Handle form submissions
      * @return bool|WP_Error
@@ -394,35 +558,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         return $settings;
     }
 
-    /**
-     * Render settings page
-     *
-    public function render() {
-        $settings = get_option('docgen_implementation_settings', array());
-        $submission_result = $this->handle_submissions();
-
-        echo '<div class="wrap">';
-        echo '<h1>' . esc_html($this->get_page_title()) . '</h1>';
-
-        // Display errors if any
-        if (is_wp_error($submission_result)) {
-            echo '<div class="notice notice-error"><p>' . esc_html($submission_result->get_error_message()) . '</p></div>';
-        }
-        
-        settings_errors('docgen_implementation_settings');
-
-        echo '<form method="post" action="">';
-        wp_nonce_field('docgen_implementation_settings', 'docgen_implementation_settings_nonce');
-
-        $this->render_directory_settings($settings);
-        $this->render_general_settings($settings);
-
-        submit_button();
-        echo '</form>';
-        echo '</div>';
-    }
-    */
-
     public function render() {
         $settings = get_option('docgen_implementation_settings', array());
         $submission_result = $this->handle_submissions();
@@ -467,7 +602,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     /**
      * Render directory settings section
      * @param array $settings Current settings
-     */
+     
     private function render_directory_settings($settings) {
         $upload_dir = wp_upload_dir();
         $upload_base = $upload_dir['basedir'];
@@ -524,11 +659,12 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
         echo '</table>';
     }
+    */
 
     /**
      * Render general settings section
      * @param array $settings Current settings
-     */
+     *
     private function render_general_settings($settings) {
         echo '<table class="form-table">';
         
@@ -560,5 +696,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
         echo '</table>';
     }
+    */
 
 }
