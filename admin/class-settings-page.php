@@ -55,6 +55,8 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      */
     private $directory_handler;
 
+    private $template_handler;
+
     /**
      * Constructor
      */
