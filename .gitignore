@@ -32,8 +32,8 @@ wp-config.php
 # Log files
 *.log
 
-# Doc files
-/docs/
+Dev files
+/devs/
 
 # htaccess
 /.htaccess
