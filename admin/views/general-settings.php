@@ -58,4 +58,21 @@ if (!defined('ABSPATH')) {
             </label>
         </td>
     </tr>
+
+        
+    <tr>
+        <th scope="row"><?php echo esc_html__('Clean Uninstall', 'docgen-implementation'); ?></th>
+        <td>
+            <label>
+                <input type="checkbox" 
+                       name="clean_uninstall" 
+                       value="1" 
+                       <?php checked($settings['clean_uninstall'] ?? false, true); ?> />
+                <?php echo esc_html__('Remove all plugin data when uninstalling', 'docgen-implementation'); ?>
+            </label>
+            <p class="description">
+                <?php echo esc_html__('This will delete all settings and generated files when plugin is deactivated.', 'docgen-implementation'); ?>
+            </p>
+        </td>
+    </tr>
 </table>

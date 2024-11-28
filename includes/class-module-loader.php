@@ -3,15 +3,39 @@
  * Module Loader
  *
  * @package     DocGen_Implementation
- * @version     1.0.0
+ * @subpackage  Core
+ * @version     1.0.1
  * @author      arisciwek
  * 
  * Path: includes/class-module-loader.php
  * 
+ * Description: Handles module discovery, registration, and loading.
+ *              Provides centralized module management system with hooks
+ *              for plugin integration.
+ * 
  * Changelog:
+ * 1.0.1 - 2024-11-28 07:15:20
+ * - Fixed load_modules method
+ * - Improved module registration
+ * - Added proper Settings Manager integration
+ * - Enhanced documentation
+ * 
  * 1.0.0 - 2024-11-24
  * - Initial implementation
  * - Module registration and loading
+ * 
+ * Dependencies:
+ * - class-settings-manager.php
+ * 
+ * Usage:
+ * $loader = new DocGen_Implementation_Module_Loader();
+ * $loader->register_module('path/to/module.php');
+ * 
+ * Actions:
+ * - docgen_implementation_modules_loaded
+ * 
+ * Filters:
+ * - docgen_implementation_modules
  */
 
 if (!defined('ABSPATH')) {
@@ -27,20 +51,58 @@ class DocGen_Implementation_Module_Loader {
 
     /**
      * Constructor
+     * Sets up action and filter hooks
      */
-
     public function __construct() {
-	    add_action('plugins_loaded', array($this, 'load_modules'), 20);
-	    add_filter('docgen_implementation_modules', array($this, 'get_modules'));
-	    
-	    // Auto-discover modules
-	    $this->discover_modules();
-	}
+        // Load modules after plugins loaded, but after DocGen (priority 20)
+        add_action('plugins_loaded', array($this, 'load_modules'), 20);
+        
+        // Filter hook for modules list
+        add_filter('docgen_implementation_modules', array($this, 'filter_modules'));
+        
+        // Auto-discover modules on instantiation
+        $this->discover_modules();
+    }
 
     /**
-     * Register module
+     * Filter hook for modules list
+     * Allows other plugins to modify modules list
+     * 
+     * @param array $modules Current modules list
+     * @return array Modified modules list
+     */
+    public function filter_modules($modules = array()) {
+        return $modules;
+    }
+
+    /**
+     * Load all registered modules
+     * Requires module files and triggers registration
+     */
+    public function load_modules() {
+        // Load all registered module files
+        foreach ($this->modules as $module_file) {
+            require_once $module_file;
+        }
+
+        // Signal that modules are loaded
+        do_action('docgen_implementation_modules_loaded');
+
+        // Get modules through filter
+        $modules = apply_filters('docgen_implementation_modules', array());
+        
+        // Register modules with Settings Manager
+        $settings = DocGen_Implementation_Settings_Manager::get_instance();
+        foreach ($modules as $module) {
+            $settings->register_module($module);
+        }
+    }
+
+    /**
+     * Register a new module
+     * 
      * @param string $module_file Full path to module main file
-     * @return bool True on success
+     * @return bool True on success, false if file doesn't exist
      */
     public function register_module($module_file) {
         if (!file_exists($module_file)) {
@@ -49,26 +111,6 @@ class DocGen_Implementation_Module_Loader {
 
         $this->modules[] = $module_file;
         return true;
-    }
-
-    /**
-     * Load all registered modules
-     */
-    public function load_modules() {
-        foreach ($this->modules as $module_file) {
-            require_once $module_file;
-        }
-
-        do_action('docgen_implementation_modules_loaded');
-    }
-
-    /**
-     * Get registered modules info
-     * @param array $modules Current modules
-     * @return array Updated modules list
-     */
-    public function get_modules($modules = array()) {
-        return $modules;
     }
 
     /**
@@ -103,6 +145,7 @@ class DocGen_Implementation_Module_Loader {
 
     /**
      * Get module instance by slug
+     * 
      * @param string $slug Module slug
      * @return object|null Module instance or null if not found
      */
@@ -118,6 +161,7 @@ class DocGen_Implementation_Module_Loader {
 
     /**
      * Check if module exists
+     * 
      * @param string $slug Module slug
      * @return bool True if module exists
      */
@@ -140,6 +184,7 @@ class DocGen_Implementation_Module_Loader {
 
     /**
      * Activate module
+     * 
      * @param string $slug Module slug
      * @return bool True on success
      */
@@ -159,6 +204,7 @@ class DocGen_Implementation_Module_Loader {
 
     /**
      * Deactivate module
+     * 
      * @param string $slug Module slug
      * @return bool True on success
      */

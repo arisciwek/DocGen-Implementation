@@ -166,24 +166,8 @@ function docgen_implementation_activate() {
     require_once DOCGEN_IMPLEMENTATION_DIR . 'admin/class-directory-handler.php';
     $directory_handler = new DocGen_Implementation_Directory_Handler();
     
-    // Set default settings
-    $default_settings = array(
-        'temp_dir' => trailingslashit($upload_base) . 'docgen-temp',
-        'template_dir' => trailingslashit($upload_base) . 'docgen-templates',
-        'output_format' => 'docx',
-        'debug_mode' => false
-    );
-    
-    // Buat direktori jika belum ada menggunakan method yang sudah ada
-    foreach (array('docgen-temp', 'docgen-templates') as $dir) {
-        $full_path = trailingslashit($upload_base) . $dir;
-        if (!file_exists($full_path)) {
-            wp_mkdir_p($full_path);
-            // Set basic security
-            @chmod($full_path, 0755);
-            @file_put_contents($full_path . '/index.php', '<?php // Silence is golden.');
-        }
-    }
+    // Settings Manager akan handle initialization
+    DocGen_Implementation_Settings_Manager::get_instance();
     
     // Update/create settings
     if (!get_option('docgen_implementation_settings')) {
@@ -194,6 +178,7 @@ function docgen_implementation_activate() {
 
     flush_rewrite_rules();
 }
+
 register_activation_hook(__FILE__, 'docgen_implementation_activate');
 
 /**
@@ -224,6 +209,28 @@ function docgen_implementation_deactivate() {
 
     // Clear scheduled hooks
     wp_clear_scheduled_hook('docgen_implementation_cleanup_temp');
+
+
+    $settings = DocGen_Implementation_Settings_Manager::get_instance()->get_core_settings();
+    
+    // Check if clean uninstall enabled
+    if (!empty($settings['clean_uninstall'])) {
+        // Delete options
+        delete_option('docgen_implementation_settings');
+        
+        // Delete directories
+        $directory_handler = new DocGen_Implementation_Directory_Handler();
+        $directory_handler->cleanup_all();
+        
+        // Remove any custom capabilities
+        $roles = array('administrator', 'editor');
+        foreach ($roles as $role) {
+            $role_obj = get_role($role);
+            if ($role_obj) {
+                $role_obj->remove_cap('manage_docgen');
+            }
+        }
+    }
 
     flush_rewrite_rules();
 }

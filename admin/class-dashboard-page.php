@@ -97,8 +97,9 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
      * @return array
      */
     private function get_system_info() {
-        $settings = get_option('docgen_implementation_settings', array());
-        
+        $settings = DocGen_Implementation_Settings_Manager::get_instance()
+            ->get_core_settings();
+
         return array(
             'php_version' => PHP_VERSION,
             'wp_version' => get_bloginfo('version'),

@@ -107,7 +107,8 @@ class DocGen_Implementation_Admin_Menu {
             $this->parent_slug . '-settings',
             array($this->settings_page, 'render')
         );
-
+        
+        // Hook untuk plugin lain
         do_action('docgen_implementation_register_admin_menu');
     }
 

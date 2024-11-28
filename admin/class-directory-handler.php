@@ -162,6 +162,17 @@ class DocGen_Implementation_Directory_Handler {
 
         return true;
     }
+    
+    // Penyesuaian untuk akses directory settings
+    public function get_directories() {
+        $settings = DocGen_Implementation_Settings_Manager::get_instance()
+            ->get_core_settings();
+        
+        return array(
+            'temp' => $settings['temp_dir'],
+            'template' => $settings['template_dir']
+        );
+    }
 
     /**
      * Get directory size

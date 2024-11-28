@@ -530,7 +530,8 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             'temp_dir' => trailingslashit($upload_base) . $temp_folder,
             'template_dir' => trailingslashit($upload_base) . $template_folder,
             'output_format' => sanitize_text_field($data['output_format'] ?? 'docx'),
-            'debug_mode' => isset($data['debug_mode'])
+            'debug_mode' => isset($data['debug_mode']),
+            'clean_uninstall' => isset($data['clean_uninstall'])
         );
 
         update_option('docgen_implementation_settings', $settings);
