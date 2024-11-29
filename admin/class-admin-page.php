@@ -8,7 +8,8 @@
  * @author      arisciwek
  * 
  * Path: admin/class-admin-page.php
- */
+ * Changelog: 2024-11-29
+*/
 
 if (!defined('ABSPATH')) {
     die('Direct access not permitted.');

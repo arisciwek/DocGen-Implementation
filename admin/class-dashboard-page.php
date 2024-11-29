@@ -14,7 +14,7 @@
  *              dan system information.
  * 
  * Changelog:
- * 1.0.1 - 2024-11-24
+ * 1.0.1 - 2024-11-29
  * - Fixed asset loading using parent class method
  * - Implemented proper enqueue_page_assets method
  * 

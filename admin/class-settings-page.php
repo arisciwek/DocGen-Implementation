@@ -14,7 +14,7 @@
  *              template directory, dan plugin options lainnya.
  * 
  * Changelog:
- * 1.0.2 - 2024-11-24
+ * 1.0.2 - 2024-11-29 11:11:11
  * - Added directory migration enqueue script 
  * - Enhanced string localization for migration features
  * - Added dependency handling for JS files

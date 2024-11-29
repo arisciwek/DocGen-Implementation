@@ -34,6 +34,7 @@ wp-config.php
 
 Dev files
 /devs/
+/.devs/
 
 # htaccess
 /.htaccess
