@@ -87,29 +87,6 @@ function docgen_implementation_check_dependencies() {
     return true;
 }
 
-/**
- * Initialize plugin
- *
-function docgen_implementation_init() {
-    // Check dependencies
-    if (!docgen_implementation_check_dependencies()) {
-        return;
-    }
-
-    // Load required files
-    require_once DOCGEN_IMPLEMENTATION_DIR . 'includes/class-module-loader.php';
-
-    // Initialize module loader
-    $module_loader = new DocGen_Implementation_Module_Loader();
-    $module_loader->discover_modules();
-
-    // Initialize admin menu - will handle loading of other admin classes
-    DocGen_Implementation_Admin_Menu::get_instance();
-
-    do_action('docgen_implementation_loaded');
-}
-*/
-
 function docgen_implementation_init() {
     // Check dependencies
     if (!docgen_implementation_check_dependencies()) {
