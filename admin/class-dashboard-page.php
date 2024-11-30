@@ -75,7 +75,7 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
         echo '<div class="wrap">';
         echo '<h1>' . esc_html($this->get_page_title()) . '</h1>';
 
-        // Add pre-content hook
+        // Add pre-content hook to customize
         do_action('docgen_implementation_before_dashboard_content');
         
         // Get modules and system info first
@@ -102,7 +102,7 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
             }
         }
 
-        // Add post-content hook
+        // Add post-content hook to customize
         do_action('docgen_implementation_after_dashboard_content');
         
         echo '</div>';
