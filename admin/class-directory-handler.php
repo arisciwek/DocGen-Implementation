@@ -124,6 +124,22 @@ class DocGen_Implementation_Directory_Handler {
                 __('Directory exists but is not writable', 'docgen-implementation')
             );
         }
+        
+        // Let other plugins add validators
+        $validators = apply_filters('docgen_implementation_directory_validators', array(
+            array($this, 'validate_path_exists'),
+            array($this, 'validate_path_writable'),
+            array($this, 'validate_path_in_allowed_area')
+        ));
+
+        foreach ($validators as $validator) {
+            if (is_callable($validator)) {
+                $result = call_user_func($validator, $path);
+                if (is_wp_error($result)) {
+                    return $result;
+                }
+            }
+        }
 
         return true;
     }
@@ -150,6 +166,9 @@ class DocGen_Implementation_Directory_Handler {
                     __('Failed to create directory', 'docgen-implementation')
                 );
             }
+
+            // Post-creation hook
+            do_action('docgen_implementation_after_directory_created', $path);
 
             // Set directory permissions
             if (!@chmod($path, $permissions)) {

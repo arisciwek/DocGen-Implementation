@@ -187,6 +187,26 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * @return array|WP_Error Upload result or error
      */
     private function handle_template_upload($file) {
+        // Let plugins validate template
+        $validators = apply_filters('docgen_implementation_template_validators', array(
+            array($this, 'validate_template_size'),
+            array($this, 'validate_template_type'),
+            array($this, 'validate_template_structure')
+        ));
+
+        // Pre-upload hook
+        do_action('docgen_implementation_before_template_upload', $file);
+
+        // Run validations
+        foreach ($validators as $validator) {
+            if (is_callable($validator)) {
+                $result = call_user_func($validator, $file);
+                if (is_wp_error($result)) {
+                    return $result;
+                }
+            }
+        }
+
         // Get template directory
         $settings = get_option('docgen_implementation_settings', array());
         $template_dir = $settings['template_dir'] ?? '';
@@ -254,7 +274,10 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             'size' => filesize($target_path),
             'type' => $file_ext
         );
-        
+
+        // Post-upload hook
+        do_action('docgen_implementation_after_template_upload', $result);
+                
         error_log('DocGen Upload: Upload template completed successfully');
         return $result;
     }

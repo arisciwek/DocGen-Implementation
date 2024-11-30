@@ -171,4 +171,36 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
         echo '</tbody></table>';
         echo '</div>';
     }
+
+    public function render() {
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html($this->get_page_title()) . '</h1>';
+
+        // Add pre-content hook
+        do_action('docgen_implementation_before_dashboard_content');
+        
+        // Get filtered cards
+        $cards = apply_filters('docgen_implementation_dashboard_cards', array(
+            'modules' => array(
+                'callback' => array($this, 'render_modules_card'),
+                'modules' => $this->get_modules()
+            ),
+            'system_info' => array(
+                'callback' => array($this, 'render_system_info_card'),
+                'info' => $this->get_system_info()
+            )
+        ));
+
+        // Render each card
+        foreach ($cards as $card) {
+            if (isset($card['callback']) && is_callable($card['callback'])) {
+                call_user_func($card['callback'], $card);
+            }
+        }
+
+        // Add post-content hook
+        do_action('docgen_implementation_after_dashboard_content');
+        
+        echo '</div>';
+    }
 }
