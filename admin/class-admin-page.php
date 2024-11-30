@@ -57,7 +57,7 @@ abstract class DocGen_Implementation_Admin_Page {
         // Enqueue common admin assets
         wp_enqueue_style(
             'docgen-admin',
-            DOCGEN_IMPLEMENTATION_URL . 'assets/css/style.css',
+            DOCGEN_IMPLEMENTATION_URL . 'assets/css/docgen-style.css',
             array(),
             DOCGEN_IMPLEMENTATION_VERSION
         );

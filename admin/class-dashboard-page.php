@@ -54,7 +54,7 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
     protected function enqueue_page_assets() {
         wp_enqueue_style(
             'docgen-dashboard',
-            DOCGEN_IMPLEMENTATION_URL . 'assets/css/dashboard.css',
+            DOCGEN_IMPLEMENTATION_URL . 'assets/css/docgen-dashboard.css',
             array(),
             DOCGEN_IMPLEMENTATION_VERSION
         );

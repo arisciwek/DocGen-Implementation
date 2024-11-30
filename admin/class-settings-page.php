@@ -267,7 +267,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         // Enqueue settings script
         wp_enqueue_script(
             'docgen-settings',
-            DOCGEN_IMPLEMENTATION_URL . 'admin/js/settings.js',
+            DOCGEN_IMPLEMENTATION_URL . 'admin/js/docgen-admin-settings.js',
             array('jquery'),
             DOCGEN_IMPLEMENTATION_VERSION,
             true
@@ -276,7 +276,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         // Enqueue directory migration script
         wp_enqueue_script(
             'docgen-directory-migration',
-            DOCGEN_IMPLEMENTATION_URL . 'admin/js/directory-migration.js',
+            DOCGEN_IMPLEMENTATION_URL . 'admin/js/docgen-directory-migration.js',
             array('jquery', 'docgen-settings'), // Dependency pada settings.js
             DOCGEN_IMPLEMENTATION_VERSION,
             true
@@ -285,7 +285,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         // Enqueue template upload handler
         wp_enqueue_script(
             'docgen-template-upload',
-            DOCGEN_IMPLEMENTATION_URL . 'admin/js/template-upload.js',
+            DOCGEN_IMPLEMENTATION_URL . 'admin/js/docgen-template-upload.js',
             array('jquery', 'docgen-settings'),
             DOCGEN_IMPLEMENTATION_VERSION,
             true
