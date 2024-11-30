@@ -109,6 +109,19 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * @param array $settings Current settings
      */
     private function render_template_settings($settings) {
+        // Get template fields
+        $fields = apply_filters('docgen_implementation_template_fields', array(
+            'name' => array(
+                'type' => 'text',
+                'label' => __('Template Name', 'docgen-implementation'),
+                'required' => true
+            ),
+            'description' => array(
+                'type' => 'textarea',
+                'label' => __('Description', 'docgen-implementation')
+            )
+        ));
+
         require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/template-settings.php';
     }
 
@@ -277,7 +290,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
         // Post-upload hook
         do_action('docgen_implementation_after_template_upload', $result);
-                
+
         error_log('DocGen Upload: Upload template completed successfully');
         return $result;
     }
