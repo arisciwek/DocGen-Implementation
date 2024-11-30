@@ -71,7 +71,6 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
     /**
      * Render dashboard page
      */
-
     public function render() {
         echo '<div class="wrap">';
         echo '<h1>' . esc_html($this->get_page_title()) . '</h1>';
@@ -79,22 +78,27 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
         // Add pre-content hook
         do_action('docgen_implementation_before_dashboard_content');
         
+        // Get modules and system info first
+        $modules = $this->get_modules();
+        $system_info = $this->get_system_info();
+        
         // Get filtered cards
         $cards = apply_filters('docgen_implementation_dashboard_cards', array(
             'modules' => array(
                 'callback' => array($this, 'render_modules_card'),
-                'modules' => $this->get_modules()
+                'data' => $modules
             ),
             'system_info' => array(
-                'callback' => array($this, 'render_system_info_card'),
-                'info' => $this->get_system_info()
+                'callback' => array($this, 'render_system_info_card'), 
+                'data' => $system_info
             )
         ));
 
         // Render each card
         foreach ($cards as $card) {
             if (isset($card['callback']) && is_callable($card['callback'])) {
-                call_user_func($card['callback'], $card);
+                // Pass only the data to the callback
+                call_user_func($card['callback'], $card['data']);
             }
         }
 
