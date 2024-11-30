@@ -14,7 +14,7 @@
  *              dan system information.
  * 
  * Changelog:
- * 1.0.1 - 2024-11-29
+ * 1.0.1 - 2024-11-24
  * - Fixed asset loading using parent class method
  * - Implemented proper enqueue_page_assets method
  * 
@@ -97,9 +97,8 @@ class DocGen_Implementation_Dashboard_Page extends DocGen_Implementation_Admin_P
      * @return array
      */
     private function get_system_info() {
-        $settings = DocGen_Implementation_Settings_Manager::get_instance()
-            ->get_core_settings();
-
+        $settings = get_option('docgen_implementation_settings', array());
+        
         return array(
             'php_version' => PHP_VERSION,
             'wp_version' => get_bloginfo('version'),

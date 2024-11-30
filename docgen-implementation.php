@@ -206,4 +206,3 @@ function docgen_implementation_deactivate() {
     flush_rewrite_rules();
 }
 register_deactivation_hook(__FILE__, 'docgen_implementation_deactivate');
-

@@ -16,7 +16,7 @@
  *              scanning template, statistik directory dan manajemen file.
  * 
  * Changelog:
- * 1.0.0 - 2024-11-29 18:11:12
+ * 1.0.0 - 2024-11-24 12:10:10
  * - Initial implementation with comprehensive directory management
  * - Added validation and security checks
  * - Added template scanning and validation
@@ -161,17 +161,6 @@ class DocGen_Implementation_Directory_Handler {
         }
 
         return true;
-    }
-    
-    // Penyesuaian untuk akses directory settings
-    public function get_directories() {
-        $settings = DocGen_Implementation_Settings_Manager::get_instance()
-            ->get_core_settings();
-        
-        return array(
-            'temp' => $settings['temp_dir'],
-            'template' => $settings['template_dir']
-        );
     }
 
     /**

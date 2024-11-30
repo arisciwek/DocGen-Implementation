@@ -14,7 +14,7 @@
  *              template directory, dan plugin options lainnya.
  * 
  * Changelog:
- * 1.0.2 - 2024-11-29 11:11:11
+ * 1.0.2 - 2024-11-25 10:10:10
  * - Added directory migration enqueue script 
  * - Enhanced string localization for migration features
  * - Added dependency handling for JS files
@@ -54,8 +54,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * @var DocGen_Implementation_Directory_Handler
      */
     private $directory_handler;
-
-    private $template_handler;
+    private $template_handler   ;
 
     /**
      * Constructor
@@ -117,8 +116,13 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
      * Render template list 
      * @param string $template_dir Template directory path
      */
-    private function render_template_list($template_dir) {
-        if (!is_dir($template_dir)) {
+    private function render_template_list($template_dir) {    
+
+        // Change dir_handler to directory_handler
+        $templates = $this->directory_handler->scan_template_files($template_dir);
+        
+        if (empty($templates)) {
+            echo '<p>' . esc_html__('No templates found.', 'docgen-implementation') . '</p>';
             return;
         }
 
@@ -530,8 +534,7 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
             'temp_dir' => trailingslashit($upload_base) . $temp_folder,
             'template_dir' => trailingslashit($upload_base) . $template_folder,
             'output_format' => sanitize_text_field($data['output_format'] ?? 'docx'),
-            'debug_mode' => isset($data['debug_mode']),
-            'clean_uninstall' => isset($data['clean_uninstall'])
+            'debug_mode' => isset($data['debug_mode'])
         );
 
         update_option('docgen_implementation_settings', $settings);

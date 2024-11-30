@@ -11,7 +11,7 @@
  * 
  * Description: Handles admin menu registration and page routing
  * 
- * Changelog: 2024-11-29
+ * Changelog:
  * 1.0.0 - Initial implementation
  * - Menu registration
  * - Page routing to new class structure
@@ -107,8 +107,7 @@ class DocGen_Implementation_Admin_Menu {
             $this->parent_slug . '-settings',
             array($this->settings_page, 'render')
         );
-        
-        // Hook untuk plugin lain
+
         do_action('docgen_implementation_register_admin_menu');
     }
 
