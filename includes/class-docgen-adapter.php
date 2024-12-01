@@ -14,7 +14,7 @@
  *              dari plugin host ke format yang dimengerti DocGen Implementation.
  * 
  * Changelog:
- * 1.0.0 - 2024-11-29 11:00:00
+ * 1.0.0 - 2024-12-019 12:15:00
  * - Initial release
  * - Added plugin info getter
  * - Added settings mapper
