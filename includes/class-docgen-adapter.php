@@ -100,6 +100,14 @@ abstract class DocGen_Adapter {
     protected $plugin_info;
 
     /**
+     * Get docgen dir
+     * @return string DocGen Implementation Directory
+     */
+    protected function get_docgen_dir() {
+        return DOCGEN_IMPLEMENTATION_DIR;
+    }
+
+    /**
      * Constructor
      */
     public function __construct() {
