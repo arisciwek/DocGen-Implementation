@@ -25,14 +25,29 @@
  * - $this     (object) Instance dari class DocGen_Implementation_Settings_Page
  */
 
+
 if (!defined('ABSPATH')) {
     die('Direct access not permitted.');
 }
 
-// Get required base directories
+// Get upload directory base
 $upload_dir = wp_upload_dir();
 $upload_base = $upload_dir['basedir'];
-$content_base = $this->get_content_base_dir();
+
+// Dari:
+// $display_path = apply_filters('modify_directory_paths', $upload_base);
+
+// Menjadi:
+$display_temp_path = isset($adapter) && method_exists($adapter, 'get_docgen_temp_path') ? 
+    $adapter->get_docgen_temp_path() : 
+    $upload_base;
+
+// atau 
+$display_template_path = isset($adapter) && method_exists($adapter, 'get_docgen_temp_path') ? 
+    $adapter->get_docgen_temp_path() : 
+    $upload_base;
+    
+
 ?>
 
 <table class="form-table">
@@ -41,7 +56,7 @@ $content_base = $this->get_content_base_dir();
         <th scope="row"><?php echo esc_html__('Temporary Directory', 'docgen-implementation'); ?></th>
         <td>
             <div class="template-dir-input">
-                <code class="base-path"><?php echo esc_html($upload_base); ?>/</code>
+                <code class="base-path"><?php echo esc_html($display_temp_path); ?>/</code>
                 <input type="text" 
                        name="temp_dir" 
                        value="<?php echo esc_attr(basename($settings['temp_dir'] ?? 'docgen-temp')); ?>"
@@ -70,7 +85,7 @@ $content_base = $this->get_content_base_dir();
         <th scope="row"><?php echo esc_html__('Template Directory', 'docgen-implementation'); ?></th>
         <td>
             <div class="template-dir-input">
-                <code class="base-path"><?php echo esc_html($content_base); ?></code>
+                <code class="base-path"><?php echo esc_html($display_template_path); ?>/</code>
                 <input type="text" 
                        name="template_dir" 
                        value="<?php echo esc_attr(basename($settings['template_dir'] ?? 'docgen-templates')); ?>"

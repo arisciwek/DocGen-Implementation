@@ -96,14 +96,44 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
 
     /**
      * Render directory settings section
-     * Uses separated template file for better organization
-     * 
      * @param array $settings Current settings
      */
-    private function render_directory_settings($settings) {
+    protected function render_directory_settings($settings) {
+        error_log('DocGen: Current directory settings: ' . print_r($settings, true));
         // Include directory settings template
         require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/directory-settings.php';
-    }    
+    }
+
+    /**
+     * Public method untuk render directory settings
+     * @param array $settings Settings data
+     *
+    public function render_directory_settings_public($settings) {
+        error_log('DocGen: Starting render directory settings public');
+        error_log('DocGen Settings: Before filter - settings: ' . print_r($settings, true));
+        
+        // Apply filter
+        $settings = apply_filters('docgen_implementation_directory_settings', $settings);
+        
+        error_log('DocGen Settings: After filter - settings: ' . print_r($settings, true));
+        
+        // Render using protected method
+        $this->render_directory_settings($settings);
+        
+        error_log('DocGen: Finished render directory settings public');
+    }
+    */
+
+    // Di class-settings-page.php
+    public function render_directory_settings_public($data) {
+        $settings = $data['settings'];
+        $adapter = $data['adapter'] ?? null;  // Extract adapter jika ada
+        
+        // Include view dengan membawa settings dan adapter
+        require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/directory-settings.php';
+    }
+
+
     /**
      * Render template settings tab
      * @param array $settings Current settings
