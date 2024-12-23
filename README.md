@@ -80,6 +80,36 @@ docgen-implementation/
 └── docgen-implementation.php
 ```
 
+## Core Components Hierarchy
+
+DocGen_Implementation_Settings_Page
+├── Extends: DocGen_Implementation_Admin_Page
+└── Dependencies:
+    ├── DocGen_Implementation_Settings_Manager
+    |   └── (Singleton pattern for centralized settings)
+    ├── DocGen_Implementation_Directory_Handler
+    |   └── (For directory operations)
+    └── DocGen_Implementation_Directory_Migration
+        └── (For handling migrations)
+
+## Settings Flow
+DocGen_Adapter
+├── Uses: DocGen_Implementation_Settings_Manager
+└── Provides:
+    ├── Plugin Info
+    ├── Settings Mapping
+    └── Module Registration
+
+DocGen_Module
+└── Uses: DocGen_Implementation_Settings_Manager
+    └── For module-specific settings
+
+DocGen_Implementation_Settings_Manager (Core)
+└── Manages:
+    ├── Core Settings
+    ├── Plugin Settings
+    └── Module Settings
+
 ## 🤝 Contributing
 
 Kontribusi akan sangat dihargai:

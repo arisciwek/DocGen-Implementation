@@ -9,39 +9,45 @@
  * 
  * Path: admin/class-settings-page.php
  * 
- * Description: Handles settings page functionality.
- *              Manages configuration untuk temporary directory,
- *              template directory, dan plugin options lainnya.
+ * Description: 
+ * Handles settings page functionality including directory configuration
+ * and template management. Integrates with Settings Manager for centralized
+ * settings handling and coordinates with Directory Handler for file operations.
  * 
- * Changelog:
- * 1.0.2 - 2024-11-25 10:10:10
- * - Added directory migration enqueue script 
- * - Enhanced string localization for migration features
- * - Added dependency handling for JS files
+ * Dependencies:
+ * - class-admin-page.php (parent class)
+ * - class-settings-manager.php (for centralized settings)
+ * - class-directory-handler.php (for directory operations)
+ * - class-directory-migration.php (for migrations)
+ * 
+ * Components Integration:
+ * - Uses Settings Manager for core settings access and updates
+ * - Uses Directory Handler for file system operations
+ * - Coordinates with Template Handler for template validation
+ * - Supports adapter integration for plugin-specific paths
+ * 
+ * Usage Flow:
+ * 1. Settings Manager provides core settings structure
+ * 2. Directory Handler validates and manages paths
+ * 3. Template Handler manages template operations
+ * 4. View renders based on combined settings
+ * 
+ * @since      1.0.0
+ * @changelog
+ * 1.0.2 - 2024-11-25
+ * - Added directory migration support 
+ * - Enhanced settings validation
+ * - Improved dependency handling
  * 
  * 1.0.1 - 2024-11-24
- * - Added directory testing functionality
+ * - Added directory testing
  * - Improved template validation
- * - Enhanced UI/UX for directory configuration
- * - Added security measures for directory handling
+ * - Added security measures
  * 
  * 1.0.0 - 2024-11-24
  * - Initial implementation
- * - Settings form implementation
+ * - Basic settings management
  * - Directory configuration
- * - Integration with DirectoryHandler
- * 
- * Dependencies:
- * - class-admin-page.php
- * - class-directory-handler.php
- * - class-directory-migration.php
- * 
- * Usage:
- * Handles all settings page related functionality including:
- * - Directory configuration and testing
- * - Template management
- * - Migration handling
- * - Security validation
  */
 
 if (!defined('ABSPATH')) {
@@ -56,24 +62,30 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     private $directory_handler;
     private $template_handler   ;
 
+    protected $settings_manager;
+
     /**
      * Constructor
      */
     public function __construct() {
+        $this->settings_manager = DocGen_Implementation_Settings_Manager::get_instance();
         $this->page_slug = 'docgen-implementation-settings';
         $this->directory_handler = new DocGen_Implementation_Directory_Handler();
         
         // Initialize template handler
         $this->template_handler = new DocGen_Implementation_Directory_Handler();
         $this->template_handler->set_directory_type('Template Directory');
-        
-        parent::__construct();
+
+        // Add action handler for directory settings
+        add_action('admin_post_docgen_save_directory_settings', array($this, 'handle_directory_settings_save'));
 
         add_action('wp_ajax_upload_template', array($this, 'ajax_handle_template_upload'));
         add_action('wp_ajax_test_directory', array($this, 'ajax_test_directory'));
         add_action('wp_ajax_test_template_dir', array($this, 'ajax_test_template_dir'));
         add_action('wp_ajax_get_directory_stats', array($this, 'ajax_get_directory_stats'));
-    }
+            
+        parent::__construct();
+}
 
     /**
      * Get page title
@@ -97,42 +109,26 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
     /**
      * Render directory settings section
      * @param array $settings Current settings
+     * @param bool $is_standalone Whether this is standalone or part of full settings page
      */
-    protected function render_directory_settings($settings) {
-        error_log('DocGen: Current directory settings: ' . print_r($settings, true));
-        // Include directory settings template
-        require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/directory-settings.php';
-    }
 
     /**
      * Public method untuk render directory settings
-     * @param array $settings Settings data
-     *
-    public function render_directory_settings_public($settings) {
-        error_log('DocGen: Starting render directory settings public');
-        error_log('DocGen Settings: Before filter - settings: ' . print_r($settings, true));
-        
-        // Apply filter
-        $settings = apply_filters('docgen_implementation_directory_settings', $settings);
-        
-        error_log('DocGen Settings: After filter - settings: ' . print_r($settings, true));
-        
-        // Render using protected method
-        $this->render_directory_settings($settings);
-        
-        error_log('DocGen: Finished render directory settings public');
-    }
-    */
+     * @param array $data Settings data
+     */
 
-    // Di class-settings-page.php
-    public function render_directory_settings_public($data) {
-        $settings = $data['settings'];
-        $adapter = $data['adapter'] ?? null;  // Extract adapter jika ada
+    public function render_directory_settings($data) {
+        // Check if we have updated settings from URL
+        $current_settings = isset($_GET['current_settings']) ? 
+            json_decode(urldecode($_GET['current_settings']), true) : null;
+            error_log(json_encode($data));
+        // Use current settings if available, otherwise use passed settings
+        $settings = $current_settings ?? $data['settings'];
+        $adapter = $data['adapter'] ?? null;
         
-        // Include view dengan membawa settings dan adapter
-        require DOCGEN_IMPLEMENTATION_DIR . 'admin/views/directory-settings.php';
+        //$is_standalone = true;
+        include DOCGEN_IMPLEMENTATION_DIR . 'admin/views/directory-settings.php';
     }
-
 
     /**
      * Render template settings tab
@@ -523,8 +519,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         ));
     }
 
-
-
     /**
      * Handle AJAX get directory stats
      */
@@ -544,7 +538,6 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         
         wp_send_json_success($stats);
     }
-
 
     /**
      * Handle form submissions
@@ -647,4 +640,43 @@ class DocGen_Implementation_Settings_Page extends DocGen_Implementation_Admin_Pa
         echo '</div>';
     }
 
+    /**
+     * Handle directory settings save
+     */
+    public function handle_directory_settings_save() {
+        // Verify nonce
+        if (!check_admin_referer('docgen_directory_settings', 'docgen_directory_nonce')) {
+            wp_die(__('Security check failed', 'docgen-implementation'));
+        }
+        
+        // Validate user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'docgen-implementation'));
+        }
+        
+        // Get and validate settings
+        $settings = $this->validate_and_save_settings($_POST);
+        
+        if (is_wp_error($settings)) {
+            add_settings_error(...);
+        } else {
+            // Refresh settings dari database
+            $settings = get_option('docgen_implementation_settings', array());
+            
+            // Update settings di class
+            $this->settings = $settings;
+            
+            add_settings_error(...);
+        }
+        
+        // Redirect dengan settings yang sudah diupdate
+        $redirect_url = add_query_arg(array(
+            'page' => $this->page_slug,
+            'settings-updated' => 'true',
+            'current_settings' => urlencode(json_encode($settings)) // Tambahkan current settings ke URL
+        ), admin_url('admin.php'));
+        
+        wp_redirect($redirect_url);
+        exit;
+    }
 }

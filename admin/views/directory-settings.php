@@ -25,30 +25,35 @@
  * - $this     (object) Instance dari class DocGen_Implementation_Settings_Page
  */
 
-
 if (!defined('ABSPATH')) {
     die('Direct access not permitted.');
 }
 
-// Get upload directory base
+// Get required base directories
 $upload_dir = wp_upload_dir();
 $upload_base = $upload_dir['basedir'];
+$content_base = $this->get_content_base_dir();
 
-// Dari:
-// $display_path = apply_filters('modify_directory_paths', $upload_base);
-
-// Menjadi:
-$display_temp_path = isset($adapter) && method_exists($adapter, 'get_docgen_temp_path') ? 
-    $adapter->get_docgen_temp_path() : 
-    $upload_base;
-
-// atau 
-$display_template_path = isset($adapter) && method_exists($adapter, 'get_docgen_temp_path') ? 
-    $adapter->get_docgen_temp_path() : 
-    $upload_base;
-    
+// Get paths from settings
+$temp_dir = $settings['temp_dir'] ?? trailingslashit($upload_base) . 'docgen-temp';
+$template_dir = $settings['template_dir'] ?? trailingslashit($upload_base) . 'docgen-templates';
 
 ?>
+
+<!-- try to fix this -->
+<?php if (isset($adapter) && method_exists($adapter, 'get_docgen_temp_path')): ?>
+    <code class="base-path"><?php echo esc_html($adapter->get_docgen_temp_path()); ?>/</code>
+<?php else: ?>
+    <code class="base-path"><?php echo esc_html($upload_base); ?>/</code>
+<?php endif; ?>
+
+
+
+<form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+    <input type="hidden" name="action" value="host_docgen_save_directory">
+    <input type="hidden" name="redirect_page" value="<?php echo esc_attr($_GET['page']); ?>">
+    <?php wp_nonce_field('docgen_directory_settings', 'docgen_directory_nonce'); ?>
+
 
 <table class="form-table">
     <!-- Temporary Directory -->
@@ -56,7 +61,7 @@ $display_template_path = isset($adapter) && method_exists($adapter, 'get_docgen_
         <th scope="row"><?php echo esc_html__('Temporary Directory', 'docgen-implementation'); ?></th>
         <td>
             <div class="template-dir-input">
-                <code class="base-path"><?php echo esc_html($display_temp_path); ?>/</code>
+                <code class="base-path"><?php echo esc_html($upload_base); ?>/</code>
                 <input type="text" 
                        name="temp_dir" 
                        value="<?php echo esc_attr(basename($settings['temp_dir'] ?? 'docgen-temp')); ?>"
@@ -85,7 +90,7 @@ $display_template_path = isset($adapter) && method_exists($adapter, 'get_docgen_
         <th scope="row"><?php echo esc_html__('Template Directory', 'docgen-implementation'); ?></th>
         <td>
             <div class="template-dir-input">
-                <code class="base-path"><?php echo esc_html($display_template_path); ?>/</code>
+                <code class="base-path"><?php echo esc_html($content_base); ?></code>
                 <input type="text" 
                        name="template_dir" 
                        value="<?php echo esc_attr(basename($settings['template_dir'] ?? 'docgen-templates')); ?>"
@@ -105,4 +110,11 @@ $display_template_path = isset($adapter) && method_exists($adapter, 'get_docgen_
             <div class="template-dir-status"></div>
         </td>
     </tr>
-</table>
+        <?php 
+        // Hook untuk plugin lain menambahkan field tambahan
+        do_action('docgen_implementation_directory_settings_fields', $settings); 
+        ?>
+    </table>
+
+    <?php submit_button(__('Save Directory Settings', 'docgen-implementation')); ?>
+</form>

@@ -99,6 +99,11 @@ abstract class DocGen_Adapter {
      */
     protected $plugin_info;
 
+    protected $plugin_file;
+
+    protected $plugin_slug;
+
+
     /**
      * Get docgen dir
      * @return string DocGen Implementation Directory
@@ -110,11 +115,44 @@ abstract class DocGen_Adapter {
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct($plugin_file=null) {
+        $this->plugin_file = $plugin_file;
         $this->settings_manager = DocGen_Implementation_Settings_Manager::get_instance();
+        $this->plugin_slug = $this->get_plugin_slug();
         $this->plugin_info = $this->get_plugin_info();
-        
         $this->register_hooks();
+    }
+
+    public function get_plugin_slug() {
+        if ($this->plugin_file) {
+            $path = dirname($this->plugin_file);
+            $path = str_replace(WP_PLUGIN_DIR . '/', '', $path);
+            $path_parts = explode('/', $path);
+            return $path_parts[0];
+        }
+        return '';
+    }
+
+    public function get_docgen_temp_path() {
+        $upload_dir = wp_upload_dir();
+        $base_dir = $upload_dir['basedir'];
+        $plugin_slug = $this->get_plugin_slug();
+        
+        $settings = get_option('docgen_implementation_settings', array());
+        $temp_folder = isset($settings['temp_dir']) ? $settings['temp_dir'] : '';
+        
+        return $temp_folder . '/' . $plugin_slug;
+    }
+
+    public function get_docgen_template_path() {
+        $upload_dir = wp_upload_dir();
+        $base_dir = $upload_dir['basedir'];
+        $plugin_slug = $this->get_plugin_slug();
+        
+        $settings = get_option('docgen_implementation_settings', array());
+        $template_folder = basename($settings['template_dir'] ?? 'docgen-templates');
+        
+        return trailingslashit($base_dir) . $template_folder . '/' . $plugin_slug;
     }
 
     /**
